@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* A banking palette: deep navy primary, a restrained gold accent for brand marks. */
+@layer base {
+  :root {
+    --background: 216 33% 97%;
+    --foreground: 222 40% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 40% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 40% 13%;
+    --primary: 218 72% 33%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 22% 93%;
+    --secondary-foreground: 222 40% 18%;
+    --muted: 216 22% 94%;
+    --muted-foreground: 218 12% 42%;
+    --accent: 216 60% 94%;
+    --accent-foreground: 218 72% 26%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 62% 32%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 92% 46%;
+    --warning-foreground: 30 40% 12%;
+    --gold: 41 78% 52%;
+    --border: 216 18% 87%;
+    --input: 216 18% 82%;
+    --ring: 218 72% 40%;
+    --radius: 0.5rem;
+    --sidebar: 222 52% 14%;
+    --sidebar-foreground: 216 30% 93%;
+    --sidebar-muted: 216 18% 66%;
+    /* Categorical, fixed order (validated: CVD ΔE ≥ 8, normal ≥ 15 vs #fff). Slots 3–5 are under 3:1, so charts ship with labels. */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --chart-6: #008300;
+    --chart-7: #6250d6;
+    --chart-8: #e34948;
+    --chart-grid: hsl(216 18% 90%);
+  }
+  .dark {
+    --background: 222 40% 8%;
+    --foreground: 216 30% 92%;
+    --card: 222 36% 11%;
+    --card-foreground: 216 30% 92%;
+    --popover: 222 36% 11%;
+    --popover-foreground: 216 30% 92%;
+    --primary: 216 80% 62%;
+    --primary-foreground: 222 45% 9%;
+    --secondary: 222 26% 18%;
+    --secondary-foreground: 216 30% 92%;
+    --muted: 222 26% 16%;
+    --muted-foreground: 216 14% 64%;
+    --accent: 218 40% 20%;
+    --accent-foreground: 216 70% 85%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 90% 55%;
+    --warning-foreground: 30 40% 10%;
+    --gold: 41 80% 58%;
+    --border: 222 24% 21%;
+    --input: 222 24% 26%;
+    --ring: 216 80% 62%;
+    --sidebar: 222 48% 6%;
+    --sidebar-foreground: 216 30% 90%;
+    --sidebar-muted: 216 14% 60%;
+    /* Same hues stepped for the dark card surface (validated vs #121826, all ≥ 3:1). */
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+    --chart-7: #9085e9;
+    --chart-8: #e66767;
+    --chart-grid: hsl(222 24% 20%);
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; font-feature-settings: 'tnum' 1; }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+}
+
+/* Mobile first: comfortable touch targets for members on phones (README §8.6). */
+@media (pointer: coarse) {
+  button, [role='button'], a, select, input[type='checkbox'] { min-height: 2.25rem; }
+}
+
+/* Reports and statements print on their own (README §7.13). */
+@media print {
+  body * { visibility: hidden; }
+  .report, .report * { visibility: visible; }
+  .report { position: absolute; inset: 0; }
+  .no-print { display: none !important; }
+  .report .overflow-auto { overflow: visible !important; }
+}
