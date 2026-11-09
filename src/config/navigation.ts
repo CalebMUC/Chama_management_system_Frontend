@@ -27,6 +27,23 @@ export interface NavGroup {
   items: NavItem[];
 }
 
+/**
+ * Workspaces split member self-service from back-office work. Presentation only: which items a user sees is still decided by
+ * each item's permission and feature.
+ */
+export type WorkspaceId = 'banking' | 'operations';
+export interface Workspace {
+  id: WorkspaceId;
+  label: string;
+  /** Labels of the navigation groups in this workspace. */
+  groups: string[];
+}
+export const workspaces: Workspace[] = [
+  { id: 'banking', label: 'My banking', groups: ['Me'] },
+  { id: 'operations', label: 'Operations', groups: ['Chama', 'Money', 'Books', 'Settings'] },
+];
+export const workspaceOf = (groupLabel: string): Workspace | null => workspaces.find((w) => w.groups.includes(groupLabel)) ?? null;
+
 // README §6.2. Each item is shown only when its permission and licence feature checks pass; empty groups are hidden.
 export const navigation: NavGroup[] = [
   {

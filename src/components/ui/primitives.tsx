@@ -8,10 +8,10 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const fieldBase =
-  'flex w-full rounded-md border border-input bg-card px-3 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive';
+  'flex w-full rounded-md border border-input bg-card px-2.5 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, type, ...props }, ref) => (
-  <input type={type} ref={ref} className={cn(fieldBase, 'h-9 py-1 file:border-0 file:bg-transparent file:text-sm file:font-medium', className)} {...props} />
+  <input type={type} ref={ref} className={cn(fieldBase, 'h-control py-1 file:border-0 file:bg-transparent file:text-sm file:font-medium', className)} {...props} />
 ));
 Input.displayName = 'Input';
 
@@ -22,7 +22,7 @@ Textarea.displayName = 'Textarea';
 
 /** A styled native select: reliable with react-hook-form and on tablets. */
 export const NativeSelect = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(({ className, children, ...props }, ref) => (
-  <select ref={ref} className={cn(fieldBase, 'h-9 py-1 pr-8', className)} {...props}>
+  <select ref={ref} className={cn(fieldBase, 'h-control py-1 pl-2 pr-1', className)} {...props}>
     {children}
   </select>
 ));
@@ -36,30 +36,30 @@ export const Label = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Roo
 Label.displayName = 'Label';
 
 export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('rounded-lg border bg-card text-card-foreground shadow-sm', className)} {...props} />
+  <div ref={ref} className={cn('rounded-lg border bg-card text-card-foreground', className)} {...props} />
 ));
 Card.displayName = 'Card';
 export const CardHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex flex-col gap-1 p-4 pb-2', className)} {...props} />
+  <div className={cn('flex flex-col gap-1 p-[var(--panel-p)] pb-2', className)} {...props} />
 );
 export const CardTitle = ({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h3 className={cn('text-base font-semibold leading-tight', className)} {...props} />
+  <h3 className={cn('text-sm font-semibold leading-tight', className)} {...props} />
 );
 export const CardDescription = ({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) => (
   <p className={cn('text-sm text-muted-foreground', className)} {...props} />
 );
-export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn('p-4 pt-2', className)} {...props} />;
+export const CardContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div className={cn('p-[var(--panel-p)] pt-2', className)} {...props} />;
 export const CardFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex items-center gap-2 p-4 pt-0', className)} {...props} />
+  <div className={cn('flex items-center gap-2 p-[var(--panel-p)] pt-0', className)} {...props} />
 );
 
-export const badgeVariants = cva('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap', {
+export const badgeVariants = cva('inline-flex h-5 items-center gap-1 rounded-sm border px-1.5 text-2xs font-medium leading-none whitespace-nowrap', {
   variants: {
     variant: {
       default: 'border-transparent bg-primary/10 text-primary',
       secondary: 'border-transparent bg-secondary text-secondary-foreground',
       success: 'border-transparent bg-success/15 text-success',
-      warning: 'border-transparent bg-warning/20 text-warning-foreground dark:text-warning',
+      warning: 'border-transparent bg-warning/15 text-warning-text',
       destructive: 'border-transparent bg-destructive/15 text-destructive',
       outline: 'text-foreground',
       info: 'border-transparent bg-sky-500/15 text-sky-700 dark:text-sky-300',
@@ -73,7 +73,7 @@ export function Badge({ className, variant, ...props }: React.HTMLAttributes<HTM
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-const alertVariants = cva('relative w-full rounded-lg border px-4 py-3 text-sm [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-3.5 [&>svg]:size-4 [&>svg~*]:pl-7', {
+const alertVariants = cva('relative w-full rounded-md border px-3 py-2.5 text-sm [&>svg]:absolute [&>svg]:left-3 [&>svg]:top-3 [&>svg]:size-4 [&>svg~*]:pl-7', {
   variants: {
     variant: {
       default: 'bg-card text-foreground',
@@ -115,25 +115,25 @@ Separator.displayName = 'Separator';
 
 export const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto">
-    <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    <table ref={ref} className={cn('w-full caption-bottom text-table', className)} {...props} />
   </div>
 ));
 Table.displayName = 'Table';
 export const TableHeader = ({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-  <thead className={cn('bg-muted/50 [&_tr]:border-b', className)} {...props} />
+  <thead className={cn('bg-panel-header [&_tr]:border-b', className)} {...props} />
 );
 export const TableBody = ({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) => (
   <tbody className={cn('[&_tr:last-child]:border-0', className)} {...props} />
 );
 export const TableFooter = ({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) => (
-  <tfoot className={cn('border-t bg-muted/50 font-medium', className)} {...props} />
+  <tfoot className={cn('border-t-2 bg-panel-header font-semibold', className)} {...props} />
 );
 export const TableRow = ({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) => (
-  <tr className={cn('border-b transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted', className)} {...props} />
+  <tr className={cn('border-b transition-colors hover:bg-accent/50 data-[state=selected]:bg-accent', className)} {...props} />
 );
 export const TableHead = ({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) => (
-  <th className={cn('h-10 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground', className)} {...props} />
+  <th className={cn('h-8 whitespace-nowrap px-[var(--cell-px)] text-left align-middle text-2xs font-semibold uppercase tracking-[0.05em] text-muted-foreground', className)} {...props} />
 );
 export const TableCell = ({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) => (
-  <td className={cn('px-3 py-2.5 align-middle', className)} {...props} />
+  <td className={cn('h-row px-[var(--cell-px)] py-[var(--cell-py)] align-middle', className)} {...props} />
 );

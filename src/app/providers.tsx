@@ -10,7 +10,7 @@ import { sessionStore } from '@/api/session';
 import { bootstrapSession, loginPath, refreshLicence, refreshMembership } from '@/features/auth/sessionActions';
 import { queryClient } from '@/lib/queryClient';
 import { useConnectivity } from '@/stores/connectivity';
-import { applyTheme, usePreferences } from '@/stores/preferences';
+import { applyDensity, applyTheme, usePreferences } from '@/stores/preferences';
 import { useSession } from '@/stores/session';
 
 /** Routes reachable without a session: an expired session there is not an event. */
@@ -20,6 +20,9 @@ const isPublic = (path: string) => PUBLIC.some((p) => path === p || path.startsW
 export function Providers({ children }: { children: ReactNode }) {
   const router = useRouter();
   const theme = usePreferences((s) => s.theme);
+  const density = usePreferences((s) => s.density);
+
+  useEffect(() => applyDensity(density), [density]);
 
   useEffect(() => {
     applyTheme(theme);

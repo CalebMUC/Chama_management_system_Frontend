@@ -60,7 +60,7 @@ export function Sidebar({ collapsed, onNavigate, area }: { collapsed: boolean; o
 
   return (
     <nav className="flex h-full flex-col bg-sidebar text-sidebar-foreground" aria-label="Main">
-      <div className={cn('flex h-14 shrink-0 items-center border-b border-white/10', collapsed ? 'justify-center' : 'px-4')}>
+      <div className={cn('flex h-topbar shrink-0 items-center border-b border-white/10', collapsed ? 'justify-center' : 'px-4')}>
         <BrandMark compact={collapsed} subtitle={area === 'platform' ? 'Platform console' : chamaName} />
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto px-2 py-3">

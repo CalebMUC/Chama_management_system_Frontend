@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addDays, endOfDayNairobiInstant, formatBp, formatDate, formatMoney, formatPeriodKey, fractionDigits, humanize, memberLabel, minorToInput,
-  parseMoney, parsePercentToBp,
+  addDays, compactFigure, endOfDayNairobiInstant, formatBp, formatCompactMoney, formatDate, formatFigure, formatMoney, formatPeriodKey,
+  fractionDigits, humanize, maskIdentifier, memberLabel, minorToInput, parseMoney, parsePercentToBp,
 } from './format';
 
 describe('money', () => {
@@ -35,6 +35,49 @@ describe('money', () => {
     expect(minorToInput(500000)).toBe('5000');
     expect(minorToInput(-150005)).toBe('-1500.05');
     expect(parseMoney(minorToInput(123456))).toBe(123456);
+  });
+});
+
+describe('money display', () => {
+  const nb = ' ';
+  it('shows the ISO code, a no-break space and a true minus sign', () => {
+    expect(formatMoney(150050, 'KES')).toBe(`KES${nb}1,500.50`);
+    expect(formatMoney(-150050, 'KES')).toBe(`−KES${nb}1,500.50`);
+    expect(formatMoney(500000, 'UGX')).toBe(`UGX${nb}500,000`);
+    expect(formatMoney(150050, 'KES', { symbol: false })).toBe('1,500.50');
+  });
+
+  it('gives the bare figure for table cells', () => {
+    expect(formatFigure(-209945000)).toBe('2,099,450.00');
+    expect(formatFigure(0)).toBe('0.00');
+  });
+
+  it('compacts large KPI figures', () => {
+    expect(formatCompactMoney(209_945_000, 'KES')).toBe(`KES${nb}2.10M`);
+    expect(formatCompactMoney(356_020_000, 'KES')).toBe(`KES${nb}3.56M`);
+    expect(formatCompactMoney(95_012_500, 'KES')).toBe(`KES${nb}950.1K`);
+    expect(formatCompactMoney(125_000_000_000, 'KES')).toBe(`KES${nb}1.25B`);
+    expect(formatCompactMoney(-128_450_000, 'KES')).toBe(`−KES${nb}1.28M`);
+    expect(formatCompactMoney(null)).toBe('—');
+  });
+
+  it('keeps small amounts exact', () => {
+    expect(formatCompactMoney(925_000, 'KES')).toBe(`KES${nb}9,250.00`);
+    expect(formatCompactMoney(9_999_999, 'KES')).toBe(`KES${nb}99,999.99`);
+    expect(formatCompactMoney(5_000, 'UGX')).toBe(`UGX${nb}5,000`);
+  });
+
+  it('promotes at unit boundaries instead of showing 1000.0K', () => {
+    expect(compactFigure(999_999.6)).toBe('1.00M');
+    expect(compactFigure(999_949)).toBe('999.9K');
+    expect(compactFigure(100_000)).toBe('100.0K');
+    expect(compactFigure(1_000_000)).toBe('1.00M');
+    expect(compactFigure(42)).toBe('42');
+  });
+
+  it('masks identifiers to their last four characters', () => {
+    expect(maskIdentifier('UMJ-DEP-000007')).toBe(`••••${nb}0007`);
+    expect(maskIdentifier(null)).toBe('—');
   });
 });
 

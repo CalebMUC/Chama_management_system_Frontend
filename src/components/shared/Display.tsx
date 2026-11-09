@@ -3,18 +3,19 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Ban, CheckCircle2, CircleDashed, Clock, XCircle } from 'lucide-react';
-import { Badge, Card, CardContent, CardHeader, CardTitle, type BadgeVariant } from '@/components/ui/primitives';
-import { formatMoney } from '@/lib/format';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { Badge, type BadgeVariant } from '@/components/ui/primitives';
+import { formatInstant } from '@/lib/format';
 import { label } from '@/lib/labels';
 import { cn } from '@/lib/utils';
-import { useCurrency } from '@/hooks/useSessionInfo';
+import { Amount } from './Amount';
+import { Identifier } from './Identifier';
+import { KpiTile, type KpiTone } from './Kpi';
+import { Panel } from './Panel';
 
-/** Money in minor units. Negative amounts are red. Currency defaults to the chama's. */
+/** Money in minor units. Negative amounts are red with a minus sign. Currency defaults to the chama's. (Amount underneath.) */
 export function MoneyText({ value, currency, className, signed }: { value: number | null | undefined; currency?: string; className?: string; signed?: boolean }) {
-  const chamaCurrency = useCurrency();
-  const negative = value !== null && value !== undefined && value < 0;
-  const text = formatMoney(value, currency ?? chamaCurrency);
-  return <span className={cn('tabular whitespace-nowrap', negative && 'text-destructive', className)}>{signed && value && value > 0 ? `+${text}` : text}</span>;
+  return <Amount value={value} currency={currency} className={className} signed={signed} tone="negative" />;
 }
 
 // Status colours (README §8.5). Colour is never the only signal: every chip has its text and an icon.
@@ -45,49 +46,61 @@ export function StatusChip({ status, text, className }: { status: string | null 
   return <Badge variant={variant} className={className}>{icons[variant]}{text ?? label(status)}</Badge>;
 }
 
-export function PageHeader({ title, description, actions, back, children }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; back?: { href: string; label: string }; children?: ReactNode }) {
+/**
+ * The page bar: breadcrumbs from the route, the title, an "As at" stamp for time-sensitive data, and the page's actions on the
+ * right. Sticky under the top bar on wider screens.
+ */
+export function PageHeader({ title, description, actions, back, asAt, children }: {
+  title: ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
+  /** The parent list; shown in the breadcrumb trail when the route doesn't already lead there. */
+  back?: { href: string; label: string };
+  /** An instant: "As at 9 Nov 2026, 10:15". */
+  asAt?: string | null;
+  children?: ReactNode;
+}) {
   return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0 space-y-1">
-        {back && <Link href={back.href} className="no-print text-sm text-muted-foreground hover:text-foreground">← {back.label}</Link>}
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description && <div className="text-sm text-muted-foreground">{description}</div>}
-        {children}
+    <div className="page-bar relative z-20 -mx-gutter -mt-gutter mb-gutter border-b bg-card px-gutter py-2 sm:sticky sm:top-topbar">
+      <Breadcrumbs extra={back} className="no-print mb-0.5" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[1.0625rem] font-semibold leading-snug tracking-tight">{title}</h1>
+          {(description || asAt) && (
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              {description && <div className="min-w-0">{description}</div>}
+              {asAt && (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  {description && <span aria-hidden>·</span>}
+                  <Clock className="size-3" aria-hidden />As at {formatInstant(asAt)}
+                </span>
+              )}
+            </div>
+          )}
+          {children}
+        </div>
+        {actions && <div className="no-print flex shrink-0 flex-wrap items-center gap-1.5">{actions}</div>}
       </div>
-      {actions && <div className="no-print flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
-type Tone = 'default' | 'success' | 'warning' | 'destructive' | 'gold';
+type Tone = KpiTone;
 
-/** A KPI tile. With href it links to the page behind the figure. */
+/** A KPI tile (KpiTile underneath). Put several in a KpiStrip so amounts render compact and never truncate. */
 export function StatCard({ label: text, value, hint, icon, tone = 'default', href }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode; tone?: Tone; href?: string }) {
-  const toneClass = { default: 'bg-primary/10 text-primary', success: 'bg-success/15 text-success', warning: 'bg-warning/20 text-warning', destructive: 'bg-destructive/10 text-destructive', gold: 'bg-gold/15 text-gold' }[tone];
-  const body = (
-    <>
-      {icon && <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg]:size-5', toneClass)}>{icon}</span>}
-      <span className="min-w-0 [&>span]:block">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{text}</span>
-        <span className="mt-0.5 truncate text-xl font-semibold tabular">{value}</span>
-        {hint && <span className="mt-0.5 text-xs text-muted-foreground">{hint}</span>}
-      </span>
-    </>
-  );
-  const cls = 'flex items-start gap-3 rounded-lg border bg-card p-4 shadow-sm';
-  if (href) return <Link href={href} className={cn(cls, 'transition-colors hover:border-primary/40 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}>{body}</Link>;
-  return <div className={cls}>{body}</div>;
+  return <KpiTile label={text} value={value} hint={hint} icon={icon} tone={tone} href={href} />;
 }
 
 /** Label/value pairs for detail pages. */
 export function DetailList({ items, columns = 2 }: { items: ({ label: string; value: ReactNode } | false | null | undefined)[]; columns?: 1 | 2 | 3 | 4 }) {
   return (
-    <dl className={cn('grid gap-x-6 gap-y-3', { 1: 'grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'grid-cols-2 lg:grid-cols-4' }[columns])}>
+    <dl className={cn('grid gap-x-6 gap-y-2.5', { 1: 'grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3', 4: 'grid-cols-2 lg:grid-cols-4' }[columns])}>
       {items.filter(Boolean).map((item) => {
         const it = item as { label: string; value: ReactNode };
         return (
           <div key={it.label} className="min-w-0">
-            <dt className="text-xs font-medium text-muted-foreground">{it.label}</dt>
+            <dt className="text-2xs font-medium uppercase tracking-[0.04em] text-muted-foreground">{it.label}</dt>
             <dd className="mt-0.5 break-words text-sm">{it.value ?? '—'}</dd>
           </div>
         );
@@ -96,29 +109,18 @@ export function DetailList({ items, columns = 2 }: { items: ({ label: string; va
   );
 }
 
-/** A titled card section. */
+/** A titled section (Panel underneath). */
 export function Section({ title, description, actions, children, className }: { title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
-  return (
-    <Card className={className}>
-      <CardHeader className="flex-row items-start justify-between gap-2 space-y-0">
-        <div className="space-y-1">
-          <CardTitle>{title}</CardTitle>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
-        </div>
-        {actions && <div className="no-print flex flex-wrap gap-2">{actions}</div>}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
+  return <Panel title={title} description={description} actions={actions} className={className}>{children}</Panel>;
 }
 
 /** A thin progress bar with an accessible value. */
-export function Progress({ value, max, className, tone = 'default' }: { value: number; max: number; className?: string; tone?: 'default' | 'success' | 'warning' | 'destructive' }) {
+export function Progress({ value, max, className, tone = 'default', label: name }: { value: number; max: number; className?: string; tone?: 'default' | 'success' | 'warning' | 'destructive'; label?: string }) {
   const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
   const bar = { default: 'bg-primary', success: 'bg-success', warning: 'bg-warning', destructive: 'bg-destructive' }[tone];
   return (
-    <div className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', className)} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
-      <div className={cn('h-full rounded-full transition-all', bar)} style={{ width: `${pct}%` }} />
+    <div className={cn('h-1.5 w-full overflow-hidden rounded-sm bg-muted', className)} role="progressbar" aria-label={name} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+      <div className={cn('h-full rounded-sm transition-all', bar)} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -126,10 +128,11 @@ export function Progress({ value, max, className, tone = 'default' }: { value: n
 /** "#57" entry numbers link to the journal. */
 export function EntryLink({ id, number }: { id: string | null | undefined; number?: number | null }) {
   if (!id) return <span className="text-muted-foreground">—</span>;
-  return <Link href={`/ledger/journal/${id}`} className="font-medium text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{number ? `#${number}` : 'View entry'}</Link>;
+  if (!number) return <Link href={`/ledger/journal/${id}`} className="font-medium text-primary hover:underline" onClick={(e) => e.stopPropagation()}>View entry</Link>;
+  return <Identifier value={`#${number}`} label="journal entry number" href={`/ledger/journal/${id}`} copy={false} />;
 }
 
 /** Signed balance coloured: negative red (arrears), positive green (credit). */
 export function SignedMoney({ value, currency }: { value: number; currency?: string }) {
-  return <MoneyText value={value} currency={currency} className={value > 0 ? 'text-success' : undefined} signed />;
+  return <Amount value={value} currency={currency} signed />;
 }

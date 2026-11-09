@@ -7,6 +7,7 @@ import { investmentsApi } from '@/api/endpoints/spending';
 import { Guard } from '@/components/shared/Can';
 import { AllocationDonut } from '@/components/shared/AllocationDonut';
 import { DetailList, MoneyText, PageHeader, Section, SignedMoney, StatCard } from '@/components/shared/Display';
+import { KpiStrip } from '@/components/shared/Kpi';
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/States';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
 import { INVESTMENT_TYPES } from '@/features/investments/ProposeDialog';
@@ -34,12 +35,12 @@ function Portfolio() {
   return (
     <div className="space-y-5">
       <PageHeader back={{ href: '/investments', label: 'Investments' }} title="Portfolio" description={`${p.activeCount} active investment${p.activeCount === 1 ? '' : 's'}`} />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiStrip>
         <StatCard label="Market value" value={<MoneyText value={p.marketValueMinor} currency={c} />} hint={<>Book value <MoneyText value={p.bookValueMinor} currency={c} /></>} icon={<Briefcase />} />
         <StatCard label="Invested" value={<MoneyText value={p.investedMinor} currency={c} />} icon={<Coins />} />
         <StatCard label="Total return" value={<SignedMoney value={p.totalReturnMinor} currency={c} />} hint={formatBp(p.returnBasisPoints)} icon={<TrendingUp />} tone={p.totalReturnMinor >= 0 ? 'success' : 'destructive'} />
         <StatCard label="Income" value={<MoneyText value={p.incomeMinor} currency={c} />} hint={<>Expenses <MoneyText value={p.expensesMinor} currency={c} /></>} icon={<LineChart />} />
-      </div>
+      </KpiStrip>
       <div className="grid gap-5 lg:grid-cols-2">
         <Section title="Allocation by type" description="Market value of active investments">
           <AllocationDonut items={donut} currency={c} centerLabel="Market value" />

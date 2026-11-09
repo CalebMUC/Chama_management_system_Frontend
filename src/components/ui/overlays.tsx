@@ -30,7 +30,7 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 grid max-h-[92vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg border bg-card p-5 shadow-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+        'fixed left-1/2 top-1/2 z-50 grid max-h-[92vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg border bg-card p-4 shadow-overlay sm:p-5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-6xl' }[size],
         className,
       )}
@@ -52,7 +52,7 @@ export const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLD
   <div className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)} {...props} />
 );
 export const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(
-  ({ className, ...props }, ref) => <DialogPrimitive.Title ref={ref} className={cn('text-lg font-semibold', className)} {...props} />,
+  ({ className, ...props }, ref) => <DialogPrimitive.Title ref={ref} className={cn('text-base font-semibold', className)} {...props} />,
 );
 DialogTitle.displayName = 'DialogTitle';
 export const DialogDescription = React.forwardRef<
@@ -71,7 +71,7 @@ export const AlertDialogContent = React.forwardRef<
     <AlertDialogPrimitive.Overlay className={overlayClass} />
     <AlertDialogPrimitive.Content
       ref={ref}
-      className={cn('fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border bg-card p-5 shadow-xl', className)}
+      className={cn('fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border bg-card p-5 shadow-overlay', className)}
       {...props}
     />
   </AlertDialogPrimitive.Portal>
@@ -96,7 +96,7 @@ export const DropdownMenuContent = React.forwardRef<
     <DropdownMenuPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
-      className={cn('z-50 min-w-[10rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=open]:fade-in-0', className)}
+      className={cn('z-50 min-w-[10rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-overlay data-[state=open]:animate-in data-[state=open]:fade-in-0', className)}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>
@@ -137,7 +137,7 @@ export const PopoverContent = React.forwardRef<
       ref={ref}
       align={align}
       sideOffset={sideOffset}
-      className={cn('z-50 rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none', className)}
+      className={cn('z-50 rounded-md border bg-popover p-3 text-popover-foreground shadow-overlay outline-none', className)}
       {...props}
     />
   </PopoverPrimitive.Portal>
@@ -151,7 +151,7 @@ export function Tooltip({ content, children }: { content: React.ReactNode; child
     <TooltipPrimitive.Root delayDuration={300}>
       <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
       <TooltipPrimitive.Portal>
-        <TooltipPrimitive.Content sideOffset={4} className="z-50 max-w-xs rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background shadow">
+        <TooltipPrimitive.Content sideOffset={4} className="z-50 max-w-xs rounded-sm bg-foreground px-2 py-1 text-xs text-background tabular shadow-overlay">
           {content}
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
@@ -163,7 +163,7 @@ export function Tooltip({ content, children }: { content: React.ReactNode; child
 export const Tabs = TabsPrimitive.Root;
 export const TabsList = React.forwardRef<React.ElementRef<typeof TabsPrimitive.List>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>>(
   ({ className, ...props }, ref) => (
-    <TabsPrimitive.List ref={ref} className={cn('inline-flex h-9 items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground', className)} {...props} />
+    <TabsPrimitive.List ref={ref} className={cn('inline-flex max-w-full items-end gap-0.5 overflow-x-auto border-b text-muted-foreground', className)} {...props} />
   ),
 );
 TabsList.displayName = 'TabsList';
@@ -171,14 +171,14 @@ export const TabsTrigger = React.forwardRef<React.ElementRef<typeof TabsPrimitiv
   ({ className, ...props }, ref) => (
     <TabsPrimitive.Trigger
       ref={ref}
-      className={cn('inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm', className)}
+      className={cn('-mb-px inline-flex items-center justify-center whitespace-nowrap border-b-2 border-transparent px-3 py-1.5 text-sm font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50 data-[state=active]:border-primary data-[state=active]:text-foreground', className)}
       {...props}
     />
   ),
 );
 TabsTrigger.displayName = 'TabsTrigger';
 export const TabsContent = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Content>, React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>>(
-  ({ className, ...props }, ref) => <TabsPrimitive.Content ref={ref} className={cn('mt-4 focus-visible:outline-none', className)} {...props} />,
+  ({ className, ...props }, ref) => <TabsPrimitive.Content ref={ref} className={cn('mt-3 focus-visible:outline-none', className)} {...props} />,
 );
 TabsContent.displayName = 'TabsContent';
 
@@ -187,7 +187,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
   ({ className, ...props }, ref) => (
     <CheckboxPrimitive.Root
       ref={ref}
-      className={cn('peer size-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground', className)}
+      className={cn('peer size-4 shrink-0 rounded-sm border border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground', className)}
       {...props}
     >
       <CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">
@@ -202,7 +202,7 @@ export const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.R
   ({ className, ...props }, ref) => (
     <SwitchPrimitive.Root
       ref={ref}
-      className={cn('peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input', className)}
+      className={cn('peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input', className)}
       {...props}
     >
       <SwitchPrimitive.Thumb className="pointer-events-none block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0" />

@@ -55,7 +55,7 @@ export const MemberPicker = forwardRef<HTMLButtonElement, MemberPickerProps>(fun
           type="button"
           {...aria}
           className={cn(
-            'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-left text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 aria-[invalid=true]:border-destructive',
+            'flex h-control w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-2.5 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 aria-[invalid=true]:border-destructive',
             className,
           )}
         >
