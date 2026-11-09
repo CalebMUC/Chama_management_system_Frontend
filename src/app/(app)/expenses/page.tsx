@@ -27,7 +27,7 @@ const columns: ColumnDef<ExpenseView, unknown>[] = [
   { id: 'payee', header: 'Payee', accessorKey: 'payee', cell: ({ row }) => <span className="font-medium">{row.original.payee}</span> },
   { id: 'description', header: 'Description', accessorKey: 'description', cell: ({ row }) => <span className="line-clamp-2 min-w-[12rem]">{row.original.description}</span> },
   { id: 'account', header: 'Account', accessorKey: 'accountName', cell: ({ row }) => <span className="text-sm">{row.original.accountName}{row.original.investmentName && <span className="block text-xs text-muted-foreground">{row.original.investmentName}</span>}</span> },
-  { id: 'amount', header: 'Amount', accessorKey: 'amountMinor', meta: { align: 'right' }, cell: ({ row }) => <MoneyText value={row.original.amountMinor} currency={row.original.currency} /> },
+  { id: 'amount', header: 'Amount', accessorKey: 'amountMinor', meta: { numeric: true }, cell: ({ row }) => <MoneyText value={row.original.amountMinor} currency={row.original.currency} /> },
   { id: 'status', header: 'Status', accessorKey: 'status', cell: ({ row }) => <StatusChip status={row.original.status} /> },
   {
     id: 'approvals',

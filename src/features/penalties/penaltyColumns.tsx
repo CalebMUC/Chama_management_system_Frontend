@@ -13,7 +13,7 @@ export function penaltyColumns(withMember: boolean): ColumnDef<PenaltyView, unkn
     id: key,
     header,
     accessorKey: key,
-    meta: { align: 'right' },
+    meta: { numeric: true },
     cell: ({ row }) => {
       const v = row.original[key] as number;
       return <MoneyText value={v} currency={row.original.currency} className={red && v > 0 ? 'font-medium text-destructive' : undefined} />;

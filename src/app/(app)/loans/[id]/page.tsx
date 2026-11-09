@@ -13,12 +13,11 @@ import { ReasonDialog } from '@/components/shared/ReasonDialog';
 import { ErrorState, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/overlays';
-import { Card, CardContent } from '@/components/ui/primitives';
 import { CashBalances } from '@/features/books/CashBalances';
-import { LoanDetailBody, LoanFigures, LoanStatusLine, RepaidProgress } from '@/features/loans/LoanPanels';
+import { LoanSummaryStrip, LoanTabs } from '@/features/loans/LoanPanels';
 import { useApiMutation } from '@/hooks/useApiMutation';
 import { useCan, useMyUserId } from '@/hooks/useSessionInfo';
-import { formatMoney, memberLabel } from '@/lib/format';
+import { formatDate, formatMoney, memberLabel } from '@/lib/format';
 import { keys } from '@/lib/invalidation';
 
 export default function LoanDetailPage() {
@@ -77,11 +76,11 @@ function LoanView({ detail }: { detail: LoanDetailView }) {
   }, [params, canRepay, loan.id, router]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <PageHeader
         back={{ href: '/loans', label: 'Loans' }}
         title={<><MoneyText value={loan.principalMinor} currency={c} /> · {name}</>}
-        description={<LoanStatusLine loan={loan} />}
+        description={<>{loan.productName} · {loan.purpose} · applied {formatDate(loan.appliedOn)}</>}
         actions={
           <>
             {action(loan.status === 'PENDING_APPROVAL' && can('LOAN_APPROVE'), approveBlock, <Button onClick={() => setDialog('approve')} disabled={!!approveBlock}><Check />Approve</Button>)}
@@ -91,15 +90,8 @@ function LoanView({ detail }: { detail: LoanDetailView }) {
           </>
         }
       />
-      <Card>
-        <CardContent className="space-y-5 p-4 sm:p-6">
-          <RepaidProgress loan={loan} />
-          <LoanFigures loan={loan} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="p-4 sm:p-6"><LoanDetailBody detail={detail} linkEntries={can('LEDGER_VIEW')} /></CardContent>
-      </Card>
+      <LoanSummaryStrip loan={loan} />
+      <LoanTabs detail={detail} linkEntries={can('LEDGER_VIEW')} />
 
       <ReasonDialog
         open={dialog === 'approve'}

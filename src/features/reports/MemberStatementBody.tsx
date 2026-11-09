@@ -1,42 +1,49 @@
 'use client';
 
 import type { MemberStatementView } from '@/api/types';
-import { MoneyText, Section, SignedMoney, StatusChip } from '@/components/shared/Display';
+import { Amount } from '@/components/shared/Amount';
+import { MoneyText, SignedMoney, StatusChip } from '@/components/shared/Display';
+import { Identifier } from '@/components/shared/Identifier';
+import { KeyValue } from '@/components/shared/Panel';
+import { StatementDocument } from '@/components/shared/Statement';
 import { StatementTable } from '@/components/shared/StatementTable';
-import { EmptyState } from '@/components/shared/States';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
 import { csvMoney, downloadCsv } from '@/lib/csv';
-import { formatDate, formatPeriodKey, fractionDigits, memberLabel } from '@/lib/format';
+import { formatDate, formatPeriodKey, fractionDigits } from '@/lib/format';
 
-/** Member statement layout (README §7.13), shared by My statement, the report and member detail. */
+/** Member statement (README §7.13) as a bank statement: letterhead, member and period, position, then each account. */
 export function MemberStatementBody({ s }: { s: MemberStatementView }) {
   const c = s.currency;
-  const tiles = [
-    { label: 'Savings', value: <MoneyText value={s.savingsMinor} currency={c} /> },
-    { label: 'Loans outstanding', value: <MoneyText value={s.loansOutstandingMinor} currency={c} /> },
-    { label: 'Penalties owed', value: <MoneyText value={s.penaltiesOutstandingMinor} currency={c} /> },
-    { label: 'Net position', value: <SignedMoney value={s.netPositionMinor} currency={c} /> },
-  ];
   return (
-    <div className="space-y-5">
-      <div>
-        <p className="text-lg font-semibold">{memberLabel(s.member.name, s.member.memberNumber)}</p>
-        <p className="text-sm text-muted-foreground">
-          {s.chamaName} · {s.from ? formatDate(s.from) : 'From the start'} to {s.to ? formatDate(s.to) : 'today'}
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map((t) => (
-          <div key={t.label} className="rounded-lg border bg-card p-3">
-            <p className="text-xs text-muted-foreground">{t.label}</p>
-            <p className="mt-0.5 text-lg font-semibold">{t.value}</p>
-          </div>
-        ))}
-      </div>
-
+    <StatementDocument
+      title="Member statement"
+      from={s.from}
+      to={s.to}
+      generatedAt={s.generatedAt}
+      subject={
+        <>
+          <p className="text-base font-semibold">{s.member.name ?? 'Unknown member'}</p>
+          {s.member.memberNumber && <p className="text-muted-foreground">Member number <Identifier value={s.member.memberNumber} label="member number" copy={false} /></p>}
+          <p className="text-muted-foreground">{s.chamaName}</p>
+        </>
+      }
+      summary={
+        <div className="rounded-md border px-3">
+          <KeyValue
+            items={[
+              { label: 'Savings', value: <MoneyText value={s.savingsMinor} currency={c} /> },
+              { label: 'Loans outstanding', value: <MoneyText value={s.loansOutstandingMinor} currency={c} /> },
+              { label: 'Penalties owed', value: <MoneyText value={s.penaltiesOutstandingMinor} currency={c} /> },
+              { label: 'Net position', value: <SignedMoney value={s.netPositionMinor} currency={c} />, emphasis: true },
+            ]}
+          />
+        </div>
+      }
+    >
       {s.contributions && (
-        <Section title="Contributions">
-          <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
+        <section className="space-y-1.5">
+          <h3 className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">Contributions</h3>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-md border p-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
             <div><p className="text-xs text-muted-foreground">Paid</p><MoneyText value={s.contributions.totalPaidMinor} currency={c} /></div>
             <div><p className="text-xs text-muted-foreground">Due to date</p><MoneyText value={s.contributions.dueToDateMinor} currency={c} /></div>
             <div><p className="text-xs text-muted-foreground">Arrears</p><MoneyText value={s.contributions.arrearsMinor} currency={c} className={s.contributions.arrearsMinor > 0 ? 'text-destructive' : undefined} /></div>
@@ -47,29 +54,33 @@ export function MemberStatementBody({ s }: { s: MemberStatementView }) {
               {formatPeriodKey(s.contributions.latestPeriod)} {s.contributions.latestPeriodStatus && <StatusChip status={s.contributions.latestPeriodStatus} />}
             </div>
           </div>
-        </Section>
+        </section>
       )}
 
       {s.savings.map((a) => (
-        <div key={a.code + (a.accountNumber ?? '')} className="space-y-2">
-          <h3 className="font-medium">{a.name} <span className="text-sm font-normal text-muted-foreground">{a.accountNumber ?? a.code}</span></h3>
+        <section key={a.code + (a.accountNumber ?? '')} className="space-y-1.5">
+          <h3 className="flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
+            {a.name}
+            <span className="text-xs font-normal text-muted-foreground">Account <Identifier value={a.accountNumber ?? a.code} label="account number" sensitive /></span>
+          </h3>
           <StatementTable currency={c} opening={a.openingBalanceMinor} closing={a.closingBalanceMinor} lines={a.lines} />
-        </div>
+        </section>
       ))}
 
-      <Section title="Loans">
-        {s.loans.length === 0 ? <EmptyState title="No loans" className="py-6" /> : (
-          <div className="overflow-x-auto">
+      <section className="space-y-1.5">
+        <h3 className="text-sm font-semibold">Loans</h3>
+        {s.loans.length === 0 ? <p className="rounded-md border p-3 text-sm text-muted-foreground">No loans in this period.</p> : (
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Applied</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Principal</TableHead>
-                  <TableHead className="text-right">Repaid</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead className="text-right">Arrears</TableHead>
+                  <TableHead className="text-right">Principal ({c})</TableHead>
+                  <TableHead className="text-right">Repaid ({c})</TableHead>
+                  <TableHead className="text-right">Outstanding ({c})</TableHead>
+                  <TableHead className="text-right">Arrears ({c})</TableHead>
                   <TableHead>Next due</TableHead>
                 </TableRow>
               </TableHeader>
@@ -79,11 +90,11 @@ export function MemberStatementBody({ s }: { s: MemberStatementView }) {
                     <TableCell className="whitespace-nowrap">{formatDate(l.appliedOn)}</TableCell>
                     <TableCell>{l.productName}</TableCell>
                     <TableCell><StatusChip status={l.status} /></TableCell>
-                    <TableCell className="text-right"><MoneyText value={l.principalMinor} currency={l.currency} /></TableCell>
-                    <TableCell className="text-right"><MoneyText value={l.repaidMinor} currency={l.currency} /></TableCell>
-                    <TableCell className="text-right"><MoneyText value={l.outstandingMinor} currency={l.currency} /></TableCell>
+                    <TableCell className="text-right"><Amount value={l.principalMinor} currency={l.currency} bare /></TableCell>
+                    <TableCell className="text-right"><Amount value={l.repaidMinor} currency={l.currency} bare /></TableCell>
+                    <TableCell className="text-right"><Amount value={l.outstandingMinor} currency={l.currency} bare /></TableCell>
                     <TableCell className="text-right">
-                      <MoneyText value={l.arrearsMinor} currency={l.currency} className={l.arrearsMinor > 0 ? 'text-destructive' : undefined} />
+                      <Amount value={l.arrearsMinor} currency={l.currency} bare className={l.arrearsMinor > 0 ? 'text-destructive' : undefined} />
                       {l.daysInArrears > 0 && <span className="block text-xs text-destructive">{l.daysInArrears} days</span>}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{l.nextDueDate ? <>{formatDate(l.nextDueDate)} · <MoneyText value={l.nextDueMinor} currency={l.currency} /></> : '—'}</TableCell>
@@ -93,15 +104,15 @@ export function MemberStatementBody({ s }: { s: MemberStatementView }) {
             </Table>
           </div>
         )}
-      </Section>
+      </section>
 
       {s.penalties && (
-        <div className="space-y-2">
-          <h3 className="font-medium">Penalties account</h3>
+        <section className="space-y-1.5">
+          <h3 className="text-sm font-semibold">Penalties account</h3>
           <StatementTable currency={c} opening={s.penalties.openingBalanceMinor} closing={s.penalties.closingBalanceMinor} lines={s.penalties.lines} />
-        </div>
+        </section>
       )}
-    </div>
+    </StatementDocument>
   );
 }
 

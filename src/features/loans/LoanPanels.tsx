@@ -3,9 +3,12 @@
 import type { LoanDetailView, LoanView } from '@/api/types';
 import { ApprovalProgress } from '@/components/shared/ApprovalProgress';
 import { DetailList, EntryLink, MoneyText, Progress, StatusChip } from '@/components/shared/Display';
+import { DetailTabs } from '@/components/shared/DetailTabs';
+import { Identifier } from '@/components/shared/Identifier';
+import { KpiStrip, KpiTile } from '@/components/shared/Kpi';
 import { EmptyState } from '@/components/shared/States';
 import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
-import { formatBp, formatDate, formatInstant, memberLabel } from '@/lib/format';
+import { dueIn, formatBp, formatDate, formatInstant, memberLabel } from '@/lib/format';
 import { label } from '@/lib/labels';
 
 export const LOAN_STATUSES = ['PENDING_GUARANTORS', 'PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID', 'REJECTED', 'CANCELLED'] as const;
@@ -113,7 +116,7 @@ export function RepaymentsTable({ detail, linkEntries }: { detail: LoanDetailVie
     <div className="space-y-3">
       {d && (
         <p className="text-sm text-muted-foreground">
-          Disbursed {formatDate(d.disbursedOn)} by {label(d.method)}{d.reference && <> · ref <span className="font-mono">{d.reference}</span></>}
+          Disbursed {formatDate(d.disbursedOn)} by {label(d.method)}{d.reference && <> · ref <Identifier value={d.reference} /></>}
           {linkEntries && d.ledgerEntryId && <> · <EntryLink id={d.ledgerEntryId} /></>}
         </p>
       )}
@@ -133,7 +136,7 @@ export function RepaymentsTable({ detail, linkEntries }: { detail: LoanDetailVie
                 <TableRow key={r.id}>
                   <TableCell className="whitespace-nowrap">{formatDate(r.paidOn)}</TableCell>
                   <TableCell className="text-right"><MoneyText value={r.amountMinor} currency={c} /></TableCell>
-                  <TableCell>{label(r.method)}{r.reference && <span className="ml-1 font-mono text-xs text-muted-foreground">{r.reference}</span>}</TableCell>
+                  <TableCell>{label(r.method)}{r.reference && <> <Identifier value={r.reference} className="text-muted-foreground" /></>}</TableCell>
                   {linkEntries && <TableCell><EntryLink id={r.ledgerEntryId} /></TableCell>}
                 </TableRow>
               ))}
@@ -183,5 +186,76 @@ export function LoanStatusLine({ loan }: { loan: LoanView }) {
       {loan.status === 'PENDING_APPROVAL' && <span className="text-xs text-muted-foreground">Approvals {loan.approvals} of {loan.requiredApprovals}</span>}
       {loan.status === 'PENDING_GUARANTORS' && <span className="text-xs text-muted-foreground">Guarantors {loan.acceptedGuarantors} of {loan.requiredGuarantors}</span>}
     </span>
+  );
+}
+
+/** The key figures and status across the top of a loan's page. */
+export function LoanSummaryStrip({ loan }: { loan: LoanView }) {
+  const c = loan.currency;
+  const live = loan.status === 'ACTIVE' || loan.status === 'REPAID';
+  const pct = loan.totalDueMinor > 0 ? Math.round((loan.repaidMinor / loan.totalDueMinor) * 100) : 0;
+  return (
+    <KpiStrip min={180} compact={false}>
+      <KpiTile label="Principal" value={<MoneyText value={loan.principalMinor} currency={c} />} hint={`${loan.termMonths} months · ${formatBp(loan.interestBasisPoints)} flat`} />
+      {live && <KpiTile label="Outstanding" value={<MoneyText value={loan.outstandingMinor} currency={c} />} hint={<>Repaid {pct}% of <MoneyText value={loan.totalDueMinor} currency={c} /></>} tone="success" />}
+      {live && (
+        <KpiTile
+          label="Arrears"
+          value={<MoneyText value={loan.arrearsMinor} currency={c} className={loan.arrearsMinor > 0 ? 'text-destructive' : undefined} />}
+          hint={loan.arrearsMinor > 0 ? 'Instalments past due' : 'Up to date'}
+          tone={loan.arrearsMinor > 0 ? 'destructive' : 'default'}
+        />
+      )}
+      {loan.nextDueDate && <KpiTile label="Next instalment" value={<MoneyText value={loan.nextDueMinor} currency={c} />} hint={<>{formatDate(loan.nextDueDate)} · {dueIn(loan.nextDueDate)}</>} />}
+      {!live && <KpiTile label="Total repayable" value={<MoneyText value={loan.totalDueMinor} currency={c} />} hint={`Applied ${formatDate(loan.appliedOn)}`} />}
+      <KpiTile label="Status" value={<span className="text-base"><LoanStatusLine loan={loan} /></span>} hint={loan.maturityDate ? `Matures ${formatDate(loan.maturityDate)}` : undefined} />
+    </KpiStrip>
+  );
+}
+
+/** Details, Schedule, Repayments and Approvals as tabs (the officials' loan page). */
+export function LoanTabs({ detail, linkEntries }: { detail: LoanDetailView; linkEntries?: boolean }) {
+  const { loan } = detail;
+  const showApprovals = ['PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID'].includes(loan.status) || detail.approvals.length > 0;
+  return (
+    <DetailTabs
+      label="Loan"
+      tabs={[
+        {
+          id: 'details',
+          label: 'Details',
+          content: (
+            <div className="space-y-4">
+              <RepaidProgress loan={loan} />
+              <LoanFigures loan={loan} showBorrower />
+              {detail.decision && (detail.decision.reason || detail.decision.cancelledAt) && (
+                <div className="rounded-md border border-dashed p-3 text-sm">
+                  {detail.decision.cancelledAt ? <>Cancelled {formatInstant(detail.decision.cancelledAt)}</> : <>Rejected{detail.decision.rejectedAt && ` ${formatInstant(detail.decision.rejectedAt)}`}</>}
+                  {detail.decision.reason && <span className="text-muted-foreground"> · {detail.decision.reason}</span>}
+                </div>
+              )}
+            </div>
+          ),
+        },
+        { id: 'schedule', label: 'Schedule', count: detail.schedule.length, content: <ScheduleTable detail={detail} /> },
+        {
+          id: 'repayments',
+          label: 'Repayments',
+          count: detail.repayments.length,
+          content: detail.disbursement || detail.repayments.length > 0 ? <RepaymentsTable detail={detail} linkEntries={linkEntries} /> : <EmptyState title="Not disbursed yet" className="py-6" />,
+        },
+        {
+          id: 'approvals',
+          label: 'Approvals',
+          count: detail.approvals.length,
+          content: (
+            <div className="grid gap-5 md:grid-cols-2">
+              <GuarantorList detail={detail} />
+              {showApprovals ? <ApprovalProgress approvals={detail.approvals} required={loan.requiredApprovals} /> : <p className="text-sm text-muted-foreground">Approvals start once guarantors accept.</p>}
+            </div>
+          ),
+        },
+      ]}
+    />
   );
 }

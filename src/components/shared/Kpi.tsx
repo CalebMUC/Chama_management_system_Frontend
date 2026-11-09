@@ -10,9 +10,9 @@ export type KpiTone = 'default' | 'success' | 'warning' | 'destructive' | 'gold'
  * A row of KPI tiles that never truncates: an auto-fit grid (each tile at least 220px), equal heights, and amounts inside
  * render compact ("KES 2.10M") with the exact figure in a tooltip.
  */
-export function KpiStrip({ children, className, min = 220 }: { children: ReactNode; className?: string; min?: number }) {
+export function KpiStrip({ children, className, min = 220, compact = true }: { children: ReactNode; className?: string; min?: number; compact?: boolean }) {
   return (
-    <AmountSettingsProvider compact>
+    <AmountSettingsProvider compact={compact}>
       <div className={cn('grid auto-rows-fr gap-2', className)} style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))` }}>
         {children}
       </div>

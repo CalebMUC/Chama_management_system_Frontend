@@ -7,12 +7,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Info, Undo2 } from 'lucide-react';
 import { ledgerApi } from '@/api/endpoints/books';
 import type { EntryView } from '@/api/types';
+import { Amount } from '@/components/shared/Amount';
 import { Guard } from '@/components/shared/Can';
+import { Identifier } from '@/components/shared/Identifier';
+import { KpiStrip, KpiTile } from '@/components/shared/Kpi';
+import { Panel } from '@/components/shared/Panel';
 import { DetailList, MoneyText, PageHeader } from '@/components/shared/Display';
 import { ReasonDialog } from '@/components/shared/ReasonDialog';
 import { ErrorState, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, Badge, Card, CardContent, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
+import { Alert, AlertDescription, Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
 import { useApiMutation } from '@/hooks/useApiMutation';
 import { useMemberDirectory } from '@/hooks/useMembers';
 import { useCan } from '@/hooks/useSessionInfo';
@@ -59,28 +63,37 @@ function Entry() {
   const canReverse = e.sourceType === 'MANUAL' && !e.reversedByEntryId && can('LEDGER_POST');
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <PageHeader
         back={{ href: '/ledger/journal', label: 'Journal' }}
         title={<span className="flex flex-wrap items-center gap-2">Entry #{e.number}<Badge variant="outline">{label(e.sourceType)}</Badge>{e.reversedByEntryId && <Badge variant="secondary">Reversed</Badge>}</span>}
         description={e.description}
         actions={canReverse && <Button variant="outline" onClick={() => setReversing(true)}><Undo2 />Reverse</Button>}
       />
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <DetailList
-            columns={4}
-            items={[
-              { label: 'Date', value: formatDate(e.entryDate) },
-              { label: 'Reference', value: e.reference ?? '—' },
-              { label: 'Recorded', value: `${formatInstant(e.recordedAt)} · ${directory.nameOf(e.recordedBy)}` },
-              { label: 'Total', value: <MoneyText value={e.totalMinor} className="font-semibold" /> },
-              e.reversesEntryId ? { label: 'Reverses', value: <Link className="text-primary hover:underline" href={`/ledger/journal/${e.reversesEntryId}`}>the original entry</Link> } : null,
-              e.reversedByEntryId ? { label: 'Reversed by', value: <Link className="text-primary hover:underline" href={`/ledger/journal/${e.reversedByEntryId}`}>its reversal</Link> } : null,
-            ]}
-          />
-        </CardContent>
-      </Card>
+      <KpiStrip min={170} compact={false}>
+        <KpiTile label="Entry" value={<Identifier value={`#${e.number}`} label="journal entry number" />} hint={formatDate(e.entryDate)} />
+        <KpiTile label="Amount (Dr = Cr)" value={<MoneyText value={e.totalMinor} />} hint={`${e.lines.length} posting lines`} />
+        <KpiTile label="Source" value={<span className="text-base">{label(e.sourceType)}</span>} hint={e.reference ? <>Ref <Identifier value={e.reference} /></> : 'No reference'} />
+        <KpiTile
+          label="Balance check"
+          value={<span className={debits === credits ? 'text-base text-success' : 'text-base text-destructive'}>{debits === credits ? 'Balanced' : 'Out of balance'}</span>}
+          hint={e.reversedByEntryId ? 'Reversed' : e.reversesEntryId ? 'A reversal' : 'Posted'}
+          tone={debits === credits ? 'success' : 'destructive'}
+        />
+      </KpiStrip>
+      <Panel title="Entry details">
+        <DetailList
+          columns={4}
+          items={[
+            { label: 'Value date', value: formatDate(e.entryDate) },
+            { label: 'Reference', value: e.reference ? <Identifier value={e.reference} /> : '—' },
+            { label: 'Recorded', value: `${formatInstant(e.recordedAt)} · ${directory.nameOf(e.recordedBy)}` },
+            { label: 'Total', value: <MoneyText value={e.totalMinor} className="font-semibold" /> },
+            e.reversesEntryId ? { label: 'Reverses', value: <Link className="text-primary hover:underline" href={`/ledger/journal/${e.reversesEntryId}`}>the original entry</Link> } : null,
+            e.reversedByEntryId ? { label: 'Reversed by', value: <Link className="text-primary hover:underline" href={`/ledger/journal/${e.reversedByEntryId}`}>its reversal</Link> } : null,
+          ]}
+        />
+      </Panel>
       {e.sourceType !== 'MANUAL' && e.sourceType !== 'REVERSAL' && e.sourceType !== 'OPENING_BALANCE' && (
         <Alert>
           <Info />
@@ -89,37 +102,37 @@ function Entry() {
           </AlertDescription>
         </Alert>
       )}
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <Panel title="Postings" flush>
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead>Account</TableHead>
               <TableHead>Member</TableHead>
               <TableHead>Memo</TableHead>
-              <TableHead className="text-right">Debit</TableHead>
-              <TableHead className="text-right">Credit</TableHead>
+              <TableHead className="text-right">Debit (Dr)</TableHead>
+              <TableHead className="text-right">Credit (Cr)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {e.lines.map((l, i) => (
               <TableRow key={i}>
-                <TableCell><Link className="hover:underline" href={`/ledger/accounts/${l.accountId}`}><span className="font-mono">{l.accountCode}</span> {l.accountName}</Link></TableCell>
+                <TableCell><Link className="hover:underline" href={`/ledger/accounts/${l.accountId}`}><span className="ident mr-1.5 text-muted-foreground">{l.accountCode}</span>{l.accountName}</Link></TableCell>
                 <TableCell>{l.memberUserId ? directory.nameOf(l.memberUserId) : ''}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{l.memo ?? ''}</TableCell>
-                <TableCell className="text-right">{l.debitMinor ? <MoneyText value={l.debitMinor} /> : ''}</TableCell>
-                <TableCell className="text-right">{l.creditMinor ? <MoneyText value={l.creditMinor} /> : ''}</TableCell>
+                <TableCell className="text-right">{l.debitMinor ? <Amount value={l.debitMinor} bare /> : ''}</TableCell>
+                <TableCell className="text-right">{l.creditMinor ? <Amount value={l.creditMinor} bare /> : ''}</TableCell>
               </TableRow>
             ))}
           </TableBody>
           <TableFooter>
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={3}>Totals</TableCell>
-              <TableCell className="text-right"><MoneyText value={debits} /></TableCell>
-              <TableCell className="text-right"><MoneyText value={credits} /></TableCell>
+              <TableCell className="text-right"><Amount value={debits} bare /></TableCell>
+              <TableCell className="text-right"><Amount value={credits} bare /></TableCell>
             </TableRow>
           </TableFooter>
         </Table>
-      </div>
+      </Panel>
       <ReasonDialog
         open={reversing}
         onOpenChange={setReversing}

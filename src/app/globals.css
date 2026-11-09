@@ -171,5 +171,42 @@
   .report .page-bar { position: static !important; border: 0 !important; background: none !important; margin: 0 0 0.5rem !important; padding: 0 !important; }
   .report .data-grid { max-height: none !important; overflow: visible !important; }
   .print-only { display: block !important; }
+  /* Statements carry their own letterhead: the page bar would repeat it. */
+  .report:has(.statement-doc) .page-bar, .report:has(.statement-doc) > .print-only { display: none !important; }
+  .report .statement-doc { border: 0 !important; }
+  /* A running footer on every page of a statement. */
+  .report .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-top: 2mm;
+    border-top: 1px solid hsl(var(--border));
+    font-size: 8pt;
+    color: hsl(var(--muted-foreground));
+  }
+  .report tr { break-inside: avoid; }
+  .report thead { display: table-header-group; }
+  /* Paper is white: printing from dark mode uses the light palette. */
+  .dark {
+    --background: 0 0% 100%;
+    --foreground: 222 40% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 40% 13%;
+    --muted: 216 22% 94%;
+    --muted-foreground: 218 14% 38%;
+    --primary: 218 72% 33%;
+    --destructive: 0 72% 44%;
+    --success: 152 62% 28%;
+    --warning-text: 30 90% 30%;
+    --border: 216 18% 80%;
+    --panel-header: 216 28% 96%;
+  }
 }
+@page { margin: 14mm 12mm 18mm; }
 .print-only { display: none; }
+
+/* A statement inside a report frame brings its own letterhead and generated line. */
+.report:has(.statement-doc) .report-generated,
+.report:has(.statement-doc) .report-letterhead { display: none !important; }

@@ -377,6 +377,13 @@ export function resolve(method, path, params, body) {
   if (is('contributions', 'me')) return { data: { standing: standings[6], periods: [], recentPayments: payments.slice(0, 5) } };
   if (is('contributions', '*')) return { data: payments.find((p) => p.id === seg[1]) ?? payments[0] };
 
+  if (is('member-accounts', 'me', '*', 'statement') || is('member-accounts', '*', 'statement')) {
+    const id = seg[seg.length - 2];
+    const account = myAccounts.find((a) => a.id === id) ?? myAccounts[0];
+    const lines = statementLines(account.balanceMinor - 10 * 450_000, 450_000).map((l) => ({ ...l, entryId: entries[0].id, entryDate: l.date, memo: null }));
+    const keep = (l) => (!params.get('from') || l.entryDate >= params.get('from')) && (!params.get('to') || l.entryDate <= params.get('to'));
+    return { data: { account, from: params.get('from'), to: params.get('to'), openingBalanceMinor: account.balanceMinor - 10 * 450_000, closingBalanceMinor: account.balanceMinor, lines: lines.filter(keep) } };
+  }
   if (is('member-accounts', 'me')) return { data: { currency: KES, totalBalanceMinor: myAccounts.reduce((s, a) => s + a.balanceMinor, 0), accounts: myAccounts } };
   if (is('member-accounts')) return { data: params.get('memberUserId') ? accountsFor(params.get('memberUserId')) : members.filter((m) => m.memberNumber).flatMap((m) => accountsFor(m.userId)) };
 

@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shared/Display';
 import { ErrorState, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { formatInstant } from '@/lib/format';
-import { useSession } from '@/stores/session';
+import { Letterhead } from '@/components/shared/Statement';
 
 /**
  * Every report: parameters at the top, a print-friendly body (`.report` + @media print), and client-side CSV (README §7.13).
@@ -23,9 +23,8 @@ export function ReportFrame({ title, description, params, onCsv, onRefresh, gene
   children?: ReactNode;
   back?: { href: string; label: string };
 }) {
-  const chamaName = useSession((s) => s.chamaName);
   return (
-    <div className="report space-y-5">
+    <div className="report space-y-3">
       <PageHeader
         back={back}
         title={title}
@@ -38,10 +37,10 @@ export function ReportFrame({ title, description, params, onCsv, onRefresh, gene
           </>
         }
       />
-      <p className="hidden text-sm print:block">{chamaName}{generatedAt && ` · generated ${formatInstant(generatedAt)}`}</p>
-      {params && <div className="no-print flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">{params}</div>}
+      <div className="print-only report-letterhead"><Letterhead title={title} reference={generatedAt ? `Generated ${formatInstant(generatedAt)}` : undefined} /></div>
+      {params && <div className="no-print flex flex-wrap items-end gap-3 rounded-lg border bg-panel-header px-3 py-2">{params}</div>}
       {error ? <ErrorState error={error} onRetry={onRefresh} /> : isLoading ? <LoadingState /> : children}
-      {generatedAt && !error && !isLoading && <p className="no-print text-xs text-muted-foreground">Generated {formatInstant(generatedAt)}</p>}
+      {generatedAt && !error && !isLoading && <p className="report-generated no-print text-xs text-muted-foreground">Generated {formatInstant(generatedAt)}</p>}
     </div>
   );
 }
