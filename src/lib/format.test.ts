@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addDays, compactFigure, daysBetween, dueIn, endOfDayNairobiInstant, formatBp, formatCompactMoney, formatDate, formatFigure, formatMoney, formatPeriodKey,
+  addDays, compactFigure, daysBetween, dueIn, formatInstant, formatInstantDate, formatTime, endOfDayNairobiInstant, formatBp, formatCompactMoney, formatDate, formatFigure, formatMoney, formatPeriodKey,
   fractionDigits, humanize, maskIdentifier, memberLabel, minorToInput, parseMoney, parsePercentToBp,
 } from './format';
 
@@ -90,8 +90,10 @@ describe('rates', () => {
 
 describe('business dates', () => {
   it('formats a day without a time-zone shift', () => {
-    expect(formatDate('2026-11-08')).toBe('8 Nov 2026');
-    expect(formatDate('2026-01-01')).toBe('1 Jan 2026');
+    expect(formatDate('2026-11-08')).toBe('08 Nov 2026');
+    expect(formatDate('2026-01-01')).toBe('01 Jan 2026');
+    expect(formatDate('2026-09-30')).toBe('30 Sep 2026');
+    expect(formatDate(null)).toBe('—');
   });
 
   it('adds days across month and year ends', () => {
@@ -116,6 +118,17 @@ describe('labels', () => {
   it('shows members by number and name, never an id', () => {
     expect(memberLabel('Jane Wanjiku', 12)).toBe('#12 Jane Wanjiku');
     expect(memberLabel(null, null)).toBe('Unknown member');
+  });
+});
+
+describe('instants', () => {
+  it('shows local dates and 24-hour times in the one format', () => {
+    const local = new Date(2026, 8, 4, 18, 5).toISOString();
+    expect(formatInstant(local)).toBe('04 Sep 2026, 18:05');
+    expect(formatInstantDate(local)).toBe('04 Sep 2026');
+    expect(formatTime(local)).toBe('18:05');
+    expect(formatInstant(undefined)).toBe('—');
+    expect(formatInstant('not a date')).toBe('not a date');
   });
 });
 

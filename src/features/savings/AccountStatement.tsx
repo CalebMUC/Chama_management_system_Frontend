@@ -50,7 +50,7 @@ export function AccountStatement({ queryKey, load, back, actions, showMember }: 
       <PageHeader
         back={back}
         title={s ? s.account.productName : 'Statement'}
-        description={s && <>{s.account.accountNumber}{showMember && <> · {memberLabel(s.account.memberName, s.account.memberNumber)}</>}</>}
+        description={s && <><Identifier value={s.account.accountNumber} label="account number" sensitive copy={false} />{showMember && <> · {memberLabel(s.account.memberName, s.account.memberNumber)}</>}</>}
         actions={
           <>
             {s && actions?.(s)}

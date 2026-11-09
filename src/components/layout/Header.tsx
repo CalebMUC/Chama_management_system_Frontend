@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, Monitor, Moon, PanelLeft, Rows3, Rows4, Sun, UserRound, MonitorSmartphone } from 'lucide-react';
+import { Eye, EyeOff, LogOut, Menu, Monitor, Moon, PanelLeft, Rows3, Rows4, Sun, UserRound, MonitorSmartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/overlays';
 import { Badge } from '@/components/ui/primitives';
@@ -12,11 +12,27 @@ import { fullName } from '@/lib/format';
 import { label } from '@/lib/labels';
 import { usePreferences, type Theme } from '@/stores/preferences';
 import { useSession } from '@/stores/session';
+import { usePathname } from 'next/navigation';
+import { isMemberRoute } from '@/lib/routes';
 import type { ShellArea } from './Sidebar';
 import { ApprovalsInbox, CommandSearch, EnvBadge, NewMenu, PeriodChip, PlanChip } from './TopBarTools';
 
 const nextTheme: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'light' };
 const themeIcon = (theme: Theme) => (theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor);
+
+/** Show / hide balances, on My banking screens only (where the preference applies). */
+function BalancesButton() {
+  const pathname = usePathname();
+  const hidden = usePreferences((s) => s.hideBalances);
+  const set = usePreferences((s) => s.set);
+  if (!isMemberRoute(pathname)) return null;
+  const Icon = hidden ? Eye : EyeOff;
+  return (
+    <Button variant="ghost" size="icon" onClick={() => set('hideBalances', !hidden)} aria-pressed={hidden} aria-label={hidden ? 'Show balances' : 'Hide balances'} title={hidden ? 'Show balances' : 'Hide balances'}>
+      <Icon />
+    </Button>
+  );
+}
 
 export function ThemeToggle() {
   const theme = usePreferences((s) => s.theme);
@@ -120,6 +136,7 @@ export function Header({ onToggleSidebar, onOpenMobileNav, area }: { onToggleSid
           <NewMenu />
         </>
       )}
+      {area === 'chama' && <BalancesButton />}
       <span className="hidden sm:contents"><ThemeToggle /></span>
       <UserMenu area={area} />
     </header>

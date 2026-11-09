@@ -6,6 +6,7 @@ import { ChevronRight, PiggyBank } from 'lucide-react';
 import { memberAccountsApi } from '@/api/endpoints/savings';
 import { Guard } from '@/components/shared/Can';
 import { MoneyText, PageHeader, StatCard, StatusChip } from '@/components/shared/Display';
+import { Identifier } from '@/components/shared/Identifier';
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/States';
 import { formatDate } from '@/lib/format';
 import { label } from '@/lib/labels';
@@ -29,11 +30,11 @@ function MySavings() {
           {q.data.accounts.length === 0 ? <EmptyState title="No savings accounts yet" message="Accounts open when you are approved and when you join a savings product." /> : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {q.data.accounts.map((a) => (
-                <Link key={a.id} href={`/me/savings/${a.id}`} className="group rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/40">
+                <Link key={a.id} href={`/me/savings/${a.id}`} className="group rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-medium">{a.productName}</p>
-                      <p className="text-xs text-muted-foreground">{a.accountNumber} · {label(a.productKind)}</p>
+                      <p className="text-xs text-muted-foreground"><Identifier value={a.accountNumber} label="account number" sensitive copy={false} /> · {label(a.productKind)}</p>
                     </div>
                     <StatusChip status={a.status} />
                   </div>

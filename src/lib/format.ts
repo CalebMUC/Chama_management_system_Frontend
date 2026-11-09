@@ -116,27 +116,49 @@ export const startOfMonthNairobi = () => `${todayNairobi().slice(0, 8)}01`;
 /** 1 January this year in Nairobi. */
 export const startOfYearNairobi = () => `${todayNairobi().slice(0, 4)}-01-01`;
 
-/** "2026-11-08" -> "8 Nov 2026" without time-zone shifts. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const two = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * The one display format for dates: "09 Nov 2026". Built by hand so every browser shows the same thing (locales disagree on
+ * "Sep" and "Sept" and on day padding).
+ */
+const dayText = (y: number, m: number, d: number) => `${two(d)} ${MONTHS[m - 1]} ${y}`;
+
+/** "2026-11-08" -> "08 Nov 2026" without time-zone shifts. */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
-  if (!y || !m || !d) return iso;
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  if (!y || !m || !d || m > 12) return iso;
+  return dayText(y, m, d);
 }
 
-/** Instant -> local date-time ("6 Nov 2026, 12:00"). */
+/** An instant's parts in the browser's time zone (as before), as numbers. */
+function localParts(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate(), h: d.getHours(), min: d.getMinutes() };
+}
+
+/** Instant -> local date and 24-hour time: "09 Nov 2026, 13:15". */
 export function formatInstant(iso: string | null | undefined): string {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' });
+  const p = localParts(iso);
+  return p ? `${dayText(p.y, p.m, p.d)}, ${two(p.h)}:${two(p.min)}` : iso;
 }
 
-/** Instant -> local date only. */
+/** Instant -> local date only: "09 Nov 2026". */
 export function formatInstantDate(iso: string | null | undefined): string {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' });
+  const p = localParts(iso);
+  return p ? dayText(p.y, p.m, p.d) : iso;
+}
+
+/** Instant -> local 24-hour time only: "13:15". */
+export function formatTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const p = localParts(iso);
+  return p ? `${two(p.h)}:${two(p.min)}` : iso;
 }
 
 /** Instant -> the Nairobi calendar day "YYYY-MM-DD". */
@@ -155,8 +177,8 @@ export function formatPeriodKey(key: string | null | undefined): string {
   const week = key.match(/^(\d{4})-W(\d{2})$/);
   if (week) return `Week ${Number(week[2])}, ${week[1]}`;
   const [y, m] = key.split('-').map(Number);
-  if (!y || !m) return key;
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-KE', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  if (!y || !m || m > 12) return key;
+  return `${MONTHS[m - 1]} ${y}`;
 }
 
 /** "LOAN_APPROVAL_GIVEN" -> "Loan approval given". */

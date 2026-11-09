@@ -11,3 +11,4 @@ playwright-report
 # UI review screenshots (scripts/ui-review)
 scripts/ui-review/out/
 scripts/ui-review/dev-server.log
+scripts/ui-review/after-run.log

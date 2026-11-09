@@ -60,6 +60,8 @@ const screens = [
   { name: 'account-statement', path: '/me/savings/acc-dep-7' },
   { name: 'record-contribution', path: '/contributions/new', flow: recordContribution },
   { name: 'shell', path: '/chama', flow: shellTools },
+  // Needs the dev server started with NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES (e.g. 2); jumps the clock past the limit.
+  { name: 'idle', path: '/home', flow: async (page, shot) => { await page.clock.install(); await page.clock.fastForward('02:10'); await page.getByRole('alertdialog').waitFor({ timeout: 5000 }); await page.waitForTimeout(300); await shot(''); } },
   { name: 'home-hidden', path: '/home', flow: async (page, shot) => { await page.getByRole('button', { name: 'Hide balances' }).first().click(); await page.waitForTimeout(300); await shot(''); } },
 ];
 

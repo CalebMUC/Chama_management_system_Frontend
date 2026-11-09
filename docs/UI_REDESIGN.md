@@ -61,3 +61,30 @@ hard-code a hex colour in a component; add a token.
 `npm run ui:shots -- --label <name>` screenshots the key screens against `npm run dev` with the API mocked
 (`scripts/ui-review/`). Add `--audit` to check for truncated amounts and horizontal overflow at 1280, 1440, 1920 and 390 px, and
 `--persona member` to see a plain member's view.
+
+## Key screens (Phase 3)
+
+| Screen | Pattern |
+|--------|---------|
+| Sign-in and other public pages (`features/auth/AuthLayout.tsx`) | One secure panel on a navy backdrop: header strip, title, the page's own fields, the security notice ("ChamaBank will never ask for your password by phone, SMS or email"), support contacts from `NEXT_PUBLIC_SUPPORT_EMAIL` / `NEXT_PUBLIC_SUPPORT_PHONE`, and the app version (from `package.json`). |
+| Member home, "My accounts" (`features/home/MemberHome.tsx`) | Balance hero (`.hero` re-points text tokens so figures stay AA on navy), account tiles with masked numbers, "What you owe" (non-zero rows highlighted with an icon and text), quick actions, and a 30-day mini-statement from `reportsApi.myStatement`. |
+| Operations dashboard (`app/(app)/chama/page.tsx`) | KPI strip; approvals queue (one row per queue, Go to queue); cash position by channel; loan book with PAR30 status (icon + word, not colour alone) and pipeline; collections; income vs expenses table; recent journal entries. |
+| Transaction entry (`components/shared/Transaction.tsx`) | Inputs left, live summary right; **Review → Confirm** before anything is sent; a printable receipt. Record contribution uses the full pattern; every `PaymentDialog` and `ExpenseDialog` gets the review step through `FormDialog`'s `review` prop. Schemas and mutations are unchanged. |
+| Detail pages (`DetailTabs`) | A summary strip of key figures (`KpiStrip compact={false}`) and tabbed panels: loan (Details, Schedule, Repayments, Approvals), member (its existing tabs, framed), journal entry (details and postings with Dr/Cr totals). Every tab prints. |
+| Statements (`components/shared/Statement.tsx`) | `StatementDocument`: letterhead, statement period, who it is for, balances, transactions with running balance (`StatementTable`, bare figures under currency headers, references in their own column), generated time, and a footer that repeats on each printed page. Used by My statement, the member statement report, member detail and account statements. |
+
+## Banking hygiene (Phase 4)
+
+- **Idle timeout** (`features/auth/IdleTimeout.tsx`): after `NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES` without activity in any tab, a
+  60-second countdown with **Stay signed in** and **Sign out**; at zero it signs out through `logout()`. Off when unset or 0.
+- **Hide balances**: the `hideBalances` preference masks every `Amount` and every `sensitive` `Identifier` on My banking routes
+  (`/home`, `/me/*`, see `lib/routes.ts`). Toggles: the eye button in the top bar on those routes and the hero on My accounts.
+- **Dates**: one format from `lib/format.ts`: `formatDate` "09 Nov 2026", `formatInstant` "09 Nov 2026, 13:15" (24-hour,
+  browser time zone as before), `formatInstantDate`, `formatTime`, `formatPeriodKey` "Nov 2026". Month names are fixed in code
+  so every browser shows "Sep", not "Sept".
+
+## Print
+
+Reports and statements print on their own (`.report`). On paper: the page bar is hidden when a statement brings its own
+letterhead, table headers repeat, rows don't split, the statement footer repeats on every page, and dark mode prints with the
+light palette.

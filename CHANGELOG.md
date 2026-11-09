@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased — Banking UI redesign, phases 2–4
+
+Presentation only: no API, session, permission, licence, query-key or schema changes. See docs/UI_REDESIGN.md and docs/BACKEND_ASKS.md.
+
+### Phase 2: shell and navigation
+- Top bar: licence plan chip, environment badge (NEXT_PUBLIC_APP_ENV), contribution period chip, command palette (Ctrl/⌘K), Approvals inbox, + New transaction menu.
+- Sidebar: My banking / Operations workspaces for officials, collapsible groups, Record contribution moved to + New.
+- Phones: bottom tab bar (Home, Accounts, Loans, Statement, More).
+
+### Phase 3: key screens
+- Secure sign-in panel with security notice, support contacts and app version.
+- Member home becomes My accounts: balance hero, account tiles, obligations, quick actions, 30-day mini-statement.
+- Chama overview becomes the Operations dashboard.
+- Transaction entry: live summary, Review → Confirm, printable receipt; review step on every money dialog.
+- Lists and detail pages: identifiers, numeric columns, summary strips and tabbed panels.
+- Statements and reports: bank-statement layout with letterhead, running balances and a printed page footer.
+
+### Phase 4: banking hygiene
+- Idle timeout with a 60-second countdown (NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES; off when unset).
+- Hide balances on every My banking screen, from the top bar or the balance hero.
+- One date format (09 Nov 2026) and 24-hour times.
+
 ## v0.2.0 — Banking UI redesign, phases 0–1 (2026-11-09)
 
 Presentation only: no API, session, permission, licence, query-key or schema changes.
