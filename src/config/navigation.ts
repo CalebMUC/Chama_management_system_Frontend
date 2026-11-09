@@ -61,7 +61,7 @@ export const navigation: NavGroup[] = [
   {
     label: 'Chama',
     items: [
-      { label: 'Overview', href: '/chama', icon: LayoutDashboard, permission: 'REPORT_VIEW_ALL' },
+      { label: 'Dashboard', href: '/chama', icon: LayoutDashboard, permission: 'REPORT_VIEW_ALL' },
       { label: 'Members', href: '/members', icon: Users, permission: 'MEMBER_VIEW', badge: 'applications' },
       { label: 'Expenses', href: '/expenses', icon: Receipt, permission: 'EXPENSE_VIEW', feature: 'EXPENSES', badge: 'expenses' },
       { label: 'Investments', href: '/investments', icon: TrendingUp, permission: 'INVESTMENT_VIEW', feature: 'INVESTMENTS', badge: 'investments', exact: true },
