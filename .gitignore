@@ -7,3 +7,7 @@ next-env.d.ts
 .env*.local
 test-results
 playwright-report
+
+# UI review screenshots (scripts/ui-review)
+scripts/ui-review/out/
+scripts/ui-review/dev-server.log
