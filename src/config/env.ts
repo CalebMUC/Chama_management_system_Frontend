@@ -10,6 +10,8 @@ export const env = {
   appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? '',
   /** From package.json (next.config.mjs). */
   appVersion: process.env.NEXT_PUBLIC_APP_VERSION ?? '',
+  /** Minutes of inactivity before the sign-out countdown; empty or 0 turns it off. */
+  idleTimeoutMinutes: process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES ?? '',
 } as const;
 
 export const APP_NAME = 'Chama';

@@ -4,7 +4,11 @@ import { useMemo, type ReactNode } from 'react';
 import { z } from 'zod';
 import { useCurrency } from '@/hooks/useSessionInfo';
 import { Textarea } from '@/components/ui/primitives';
-import { formatMoney, minorToInput, parseMoney, todayNairobi } from '@/lib/format';
+import { formatDate, formatMoney, minorToInput, parseMoney, todayNairobi } from '@/lib/format';
+import { label } from '@/lib/labels';
+import { Amount } from './Amount';
+import { Identifier } from './Identifier';
+import { KeyValue } from './Panel';
 import { moneySchema, normaliseReference, paymentShape, pastDateSchema, requireReference } from '@/lib/schemas';
 import { Field } from './Field';
 import { FormDialog } from './FormDialog';
@@ -76,6 +80,22 @@ export function PaymentDialog({ open, onOpenChange, title, description, amount, 
       defaultValues={defaults as never}
       submitLabel={submitLabel}
       destructive={destructive}
+      review={(raw) => {
+        const v = raw as Record<string, unknown>;
+        return (
+          <PaymentReview
+            description={description}
+            amountMinor={amount ? (v.amount as number) : undefined}
+            amountLabel={amount?.label}
+            currency={currency}
+            method={v.method as string}
+            reference={normaliseReference(v.method as string, v.reference as string | undefined)}
+            date={v[dateField] as string}
+            dateLabel={dateLabel}
+            note={note ? (v.note as string | undefined) : undefined}
+          />
+        );
+      }}
       onSubmit={(raw) => {
         const v = raw as Record<string, unknown>;
         return onSubmit({
@@ -115,4 +135,33 @@ function PreviewLine({ text, currency, preview }: { text: string; currency: stri
   let minor: number | null = null;
   try { minor = text ? parseMoney(text, currency) : null; } catch { minor = null; }
   return <div className="text-sm" aria-live="polite">{preview(minor)}</div>;
+}
+
+/** The review step of a money movement: what will be recorded, before Confirm. */
+function PaymentReview({ description, amountMinor, amountLabel, currency, method, reference, date, dateLabel, note }: {
+  description?: ReactNode;
+  amountMinor?: number;
+  amountLabel?: string;
+  currency: string;
+  method: string;
+  reference?: string;
+  date: string;
+  dateLabel: string;
+  note?: string;
+}) {
+  return (
+    <div className="rounded-md border">
+      {description && <div className="border-b bg-panel-header px-3 py-2 text-sm">{description}</div>}
+      <KeyValue
+        className="px-3"
+        items={[
+          amountMinor !== undefined && { label: amountLabel ?? 'Amount', value: <Amount value={amountMinor} currency={currency} className="text-base font-semibold" />, emphasis: true },
+          { label: 'Channel', value: label(method) },
+          { label: method === 'MPESA' ? 'M-Pesa code' : method === 'BANK' ? 'Bank slip' : 'Reference', value: reference ? <Identifier value={reference} copy={false} /> : '—' },
+          { label: dateLabel, value: formatDate(date) },
+          note?.trim() ? { label: 'Note', value: note.trim() } : null,
+        ]}
+      />
+    </div>
+  );
 }

@@ -14,21 +14,22 @@ export function loanColumns(withBorrower = true): ColumnDef<LoanView, unknown>[]
   if (withBorrower) cols.push({ id: 'borrower', header: 'Borrower', accessorFn: (l) => memberLabel(l.borrowerName, l.memberNumber), cell: ({ getValue }) => <span className="font-medium">{getValue() as string}</span> });
   cols.push(
     { id: 'product', header: 'Product', accessorKey: 'productName' },
-    { id: 'principal', header: 'Principal', accessorKey: 'principalMinor', meta: { align: 'right' }, cell: ({ row }) => <MoneyText value={row.original.principalMinor} currency={row.original.currency} /> },
-    { id: 'term', header: 'Term', accessorKey: 'termMonths', cell: ({ row }) => `${row.original.termMonths} mo` },
+    { id: 'principal', header: 'Principal', accessorKey: 'principalMinor', meta: { numeric: true }, cell: ({ row }) => <MoneyText value={row.original.principalMinor} currency={row.original.currency} /> },
+    { id: 'term', header: 'Term', accessorKey: 'termMonths', meta: { numeric: true }, cell: ({ row }) => `${row.original.termMonths} mo` },
     { id: 'status', header: 'Status', accessorKey: 'status', cell: ({ row }) => <StatusChip status={row.original.status} /> },
     {
       id: 'approvals',
       header: 'Approvals',
       accessorKey: 'approvals',
+      meta: { numeric: true },
       cell: ({ row }) => (['PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID'].includes(row.original.status) ? <span className="tabular">{row.original.approvals}/{row.original.requiredApprovals}</span> : '—'),
     },
-    { id: 'outstanding', header: 'Outstanding', accessorKey: 'outstandingMinor', meta: { align: 'right' }, cell: ({ row }) => <MoneyText value={row.original.outstandingMinor} currency={row.original.currency} /> },
+    { id: 'outstanding', header: 'Outstanding', accessorKey: 'outstandingMinor', meta: { numeric: true }, cell: ({ row }) => <MoneyText value={row.original.outstandingMinor} currency={row.original.currency} /> },
     {
       id: 'arrears',
       header: 'Arrears',
       accessorKey: 'arrearsMinor',
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => <MoneyText value={row.original.arrearsMinor} currency={row.original.currency} className={row.original.arrearsMinor > 0 ? 'font-medium text-destructive' : undefined} />,
     },
     {

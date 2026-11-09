@@ -23,6 +23,11 @@ interface FormDialogProps<TIn extends FieldValues, TOut> {
   submitLabel?: string;
   destructive?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /**
+   * A review step: once the values pass validation, show this summary and wait for Confirm before onSubmit runs (money
+   * movements). API errors send the user back to the fields with the errors in place.
+   */
+  review?: (values: TOut) => ReactNode;
   children(form: UseFormReturn<TIn>): ReactNode;
 }
 
@@ -31,11 +36,14 @@ export function FormDialog<TIn extends FieldValues, TOut>(props: FormDialogProps
   const formId = useId();
   const [messages, setMessages] = useState<string[]>([]);
   const form = useForm<TIn, unknown, TOut>({ resolver: zResolver(props.schema), defaultValues: props.defaultValues });
+  const [pending, setPending] = useState<TOut | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (props.open) {
       form.reset(props.defaultValues);
       setMessages([]);
+      setPending(null);
     }
     // Reset only when opening; defaultValues is usually a fresh object each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,10 +51,15 @@ export function FormDialog<TIn extends FieldValues, TOut>(props: FormDialogProps
 
   async function submit(values: TOut) {
     setMessages([]);
+    if (props.review && pending === null) {
+      setPending(values);
+      return;
+    }
     try {
       await props.onSubmit(values);
       props.onOpenChange(false);
     } catch (e) {
+      setPending(null);
       const unmatched = applyApiErrors(form as unknown as UseFormReturn<FieldValues>, e);
       const apiError = normaliseError(e);
       const onField = apiError.hasFieldErrors() || !!form.getFieldState('reference' as never).error;
@@ -54,7 +67,17 @@ export function FormDialog<TIn extends FieldValues, TOut>(props: FormDialogProps
     }
   }
 
-  const submitting = form.formState.isSubmitting;
+  const confirm = async () => {
+    if (pending === null) return;
+    setConfirming(true);
+    try {
+      await submit(pending);
+    } finally {
+      setConfirming(false);
+    }
+  };
+  const reviewing = pending !== null && !!props.review;
+  const submitting = form.formState.isSubmitting || confirming;
   return (
     <Dialog open={props.open} onOpenChange={(o) => !submitting && props.onOpenChange(o)}>
       <DialogContent size={props.size ?? 'md'}>
@@ -62,13 +85,28 @@ export function FormDialog<TIn extends FieldValues, TOut>(props: FormDialogProps
           <DialogTitle>{props.title}</DialogTitle>
           {props.description ? <DialogDescription>{props.description}</DialogDescription> : <DialogDescription className="sr-only">{props.title}</DialogDescription>}
         </DialogHeader>
-        <form id={formId} onSubmit={form.handleSubmit(submit)} className="space-y-4" noValidate>
+        <form id={formId} onSubmit={form.handleSubmit(submit)} className={reviewing ? 'hidden' : 'space-y-4'} noValidate>
           <FormAlert messages={messages} />
           {props.children(form as unknown as UseFormReturn<TIn>)}
         </form>
+        {reviewing && (
+          <div className="space-y-3" aria-live="polite">
+            <p className="text-2xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">Review before you confirm</p>
+            {props.review!(pending as TOut)}
+          </div>
+        )}
         <DialogFooter>
-          <Button variant="outline" type="button" disabled={submitting} onClick={() => props.onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" form={formId} loading={submitting} variant={props.destructive ? 'destructive' : 'default'}>{props.submitLabel ?? 'Save'}</Button>
+          {reviewing ? (
+            <>
+              <Button variant="outline" type="button" disabled={submitting} onClick={() => setPending(null)}>Back</Button>
+              <Button type="button" onClick={confirm} loading={submitting} variant={props.destructive ? 'destructive' : 'default'}>Confirm · {props.submitLabel ?? 'Save'}</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" type="button" disabled={submitting} onClick={() => props.onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" form={formId} loading={submitting} variant={props.destructive ? 'destructive' : 'default'}>{props.review ? 'Review' : props.submitLabel ?? 'Save'}</Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

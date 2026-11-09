@@ -5,12 +5,14 @@ import { z } from 'zod';
 import { ledgerApi } from '@/api/endpoints/books';
 import { expensesApi, investmentsApi } from '@/api/endpoints/spending';
 import { Field } from '@/components/shared/Field';
+import { Amount } from '@/components/shared/Amount';
+import { KeyValue } from '@/components/shared/Panel';
 import { FormDialog } from '@/components/shared/FormDialog';
 import { MoneyInput, PastDateInput } from '@/components/shared/MoneyFields';
 import { Input, NativeSelect, Textarea } from '@/components/ui/primitives';
 import { useApiMutation } from '@/hooks/useApiMutation';
 import { useCurrency, useHasFeature, usePermission } from '@/hooks/useSessionInfo';
-import { todayNairobi } from '@/lib/format';
+import { formatDate, todayNairobi } from '@/lib/format';
 import { keys } from '@/lib/invalidation';
 import { moneySchema, pastDateSchema, requiredText } from '@/lib/schemas';
 
@@ -51,6 +53,21 @@ export function ExpenseDialog({ open, onOpenChange, investmentId, onCreated }: {
       defaultValues={{ amount: '', payee: '', description: '', accountCode: '', investmentId: investmentId ?? '', incurredOn: todayNairobi() }}
       submitLabel="Record expense"
       size="lg"
+      review={(v) => (
+        <div className="rounded-md border px-3">
+          <KeyValue
+            items={[
+              { label: 'Amount', value: <Amount value={v.amount} currency={currency} className="text-base font-semibold" />, emphasis: true },
+              { label: 'Payee', value: v.payee },
+              { label: 'For', value: v.description },
+              { label: 'Incurred on', value: formatDate(v.incurredOn) },
+              { label: 'Expense account', value: expenseAccounts.find((a) => a.code === v.accountCode)?.name ?? 'Operating expenses' },
+              v.investmentId ? { label: 'Investment', value: investments.data?.items.find((i) => i.id === v.investmentId)?.name ?? '—' } : null,
+              { label: 'Next', value: 'Waits for approval before it is paid' },
+            ]}
+          />
+        </div>
+      )}
       onSubmit={(v) => create.mutateAsync(v)}
     >
       {(form) => {

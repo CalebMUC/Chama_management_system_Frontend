@@ -9,14 +9,18 @@ import { reportsApi } from '@/api/endpoints/books';
 import { loansApi } from '@/api/endpoints/loans';
 import { penaltiesApi } from '@/api/endpoints/penalties';
 import { contributionsApi, memberAccountsApi } from '@/api/endpoints/savings';
+import type { MemberView } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
 import { DataTable } from '@/components/shared/DataTable';
 import { DateRangeFilter, type DateRangeValue } from '@/components/shared/DateRange';
-import { DetailList, PageHeader, StatusChip } from '@/components/shared/Display';
+import { DetailList, MoneyText, PageHeader, StatusChip } from '@/components/shared/Display';
+import { Identifier } from '@/components/shared/Identifier';
+import { KpiStrip, KpiTile } from '@/components/shared/Kpi';
+import { Panel } from '@/components/shared/Panel';
 import { LoadingState, NotFoundState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/overlays';
-import { Badge, Card, CardContent } from '@/components/ui/primitives';
+import { Badge } from '@/components/ui/primitives';
 import { StandingSummary } from '@/features/contributions/StandingSummary';
 import { paymentColumns } from '@/features/contributions/paymentColumns';
 import { LoanMobileCard, loanColumns } from '@/features/loans/loanColumns';
@@ -66,10 +70,11 @@ function MemberDetail() {
   const self = m.userId === me;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <PageHeader
         back={{ href: '/members', label: 'Members' }}
-        title={<span className="flex flex-wrap items-center gap-2">{m.memberNumber && <span className="text-muted-foreground">#{m.memberNumber}</span>}{memberName(m)}<StatusChip status={m.status} /></span>}
+        title={<span className="flex flex-wrap items-center gap-2">{memberName(m)}<StatusChip status={m.status} /></span>}
+        description={<>{m.memberNumber ? <>Member #{m.memberNumber}</> : 'No member number yet'} · {m.roles.map(label).join(', ')}</>}
         actions={
           <>
             {seated && !self && can('CONTRIBUTION_RECORD') && has('CONTRIBUTIONS') && (
@@ -80,30 +85,31 @@ function MemberDetail() {
           </>
         }
       />
-      <Card>
-        <CardContent className="space-y-4 p-4 sm:p-6">
+      <MemberSummary m={m} />
+      <Panel title="Member details">
+        <div className="space-y-4">
           <DetailList
             columns={4}
             items={[
-              { label: 'Email', value: <span className="flex items-center gap-1.5">{m.emailVerified ? <MailCheck className="size-4 text-success" aria-label="Verified" /> : <MailWarning className="size-4 text-warning" aria-label="Not verified" />}{m.email}</span> },
-              { label: 'Phone', value: m.phoneNumber },
+              { label: 'Email', value: <span className="flex items-center gap-1.5">{m.emailVerified ? <MailCheck className="size-4 text-success" aria-label="Verified" /> : <MailWarning className="size-4 text-warning-text" aria-label="Not verified" />}{m.email}</span> },
+              { label: 'Phone', value: m.phoneNumber ? <Identifier value={m.phoneNumber} label="phone number" /> : null },
               { label: 'Roles', value: <span className="flex flex-wrap gap-1">{m.roles.map((r) => <Badge key={r} variant="outline">{label(r)}</Badge>)}</span> },
               { label: m.joinedAt ? 'Joined' : 'Applied', value: formatInstantDate(m.joinedAt ?? m.appliedAt) },
               m.suspensionReason ? { label: 'Suspension reason', value: m.suspensionReason } : null,
             ]}
           />
           <MemberActions member={m} inline />
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       {tabs.length > 0 && (
-        <Tabs defaultValue={tabs[0].value}>
-          <TabsList className="h-auto flex-wrap">{tabs.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}</TabsList>
-          <TabsContent value="accounts"><AccountsTab userId={userId} /></TabsContent>
-          <TabsContent value="contributions"><ContributionsTab userId={userId} /></TabsContent>
-          <TabsContent value="loans"><LoansTab userId={userId} /></TabsContent>
-          <TabsContent value="penalties"><PenaltiesTab userId={userId} /></TabsContent>
-          <TabsContent value="statement"><StatementTab userId={userId} /></TabsContent>
+        <Tabs defaultValue={tabs[0].value} className="overflow-hidden rounded-lg border bg-card">
+          <TabsList aria-label="Member records" className="flex w-full bg-panel-header px-1.5">{tabs.map((t) => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}</TabsList>
+          <TabsContent value="accounts" className="mt-0 p-[var(--panel-p)]"><AccountsTab userId={userId} /></TabsContent>
+          <TabsContent value="contributions" className="mt-0 p-[var(--panel-p)]"><ContributionsTab userId={userId} /></TabsContent>
+          <TabsContent value="loans" className="mt-0 p-[var(--panel-p)]"><LoansTab userId={userId} /></TabsContent>
+          <TabsContent value="penalties" className="mt-0 p-[var(--panel-p)]"><PenaltiesTab userId={userId} /></TabsContent>
+          <TabsContent value="statement" className="mt-0 p-[var(--panel-p)]"><StatementTab userId={userId} /></TabsContent>
         </Tabs>
       )}
       <FineDialog open={fining} onOpenChange={setFining} memberUserId={m.userId} />
@@ -183,5 +189,31 @@ function StatementTab({ userId }: { userId: string }) {
       </div>
       {q.isLoading ? <LoadingState /> : q.data ? <MemberStatementBody s={q.data} /> : null}
     </div>
+  );
+}
+
+/** Key figures across the top: number, status, tenure and contribution standing (when the viewer may see it). */
+function MemberSummary({ m }: { m: MemberView }) {
+  const can = useCan();
+  const has = useHasFeature();
+  const showStanding = can('CONTRIBUTION_VIEW_ALL') && has('CONTRIBUTIONS') && (m.status === 'ACTIVE' || m.status === 'SUSPENDED');
+  const standings = useQuery({ queryKey: ['contributions', 'standings', false], queryFn: () => contributionsApi.standings(false), enabled: showStanding });
+  const st = standings.data?.find((x) => x.memberUserId === m.userId);
+  return (
+    <KpiStrip min={170} compact={false}>
+      <KpiTile label="Member number" value={m.memberNumber ? <Identifier value={m.memberNumber} label="member number" /> : '—'} hint={m.email} />
+      <KpiTile label="Status" value={<StatusChip status={m.status} />} hint={m.joinedAt ? `Joined ${formatInstantDate(m.joinedAt)}` : `Applied ${formatInstantDate(m.appliedAt)}`} tone={m.status === 'ACTIVE' ? 'success' : m.status === 'SUSPENDED' ? 'destructive' : 'warning'} />
+      {showStanding && st && (
+        <>
+          <KpiTile label="Contributions paid" value={<MoneyText value={st.totalPaidMinor} currency={st.currency} />} hint={`${st.latePeriods} late period${st.latePeriods === 1 ? '' : 's'}`} />
+          <KpiTile
+            label="Contribution balance"
+            value={<MoneyText value={st.balanceMinor} currency={st.currency} />}
+            hint={st.arrearsMinor > 0 ? 'In arrears' : st.advanceMinor > 0 ? 'Paid ahead' : 'Up to date'}
+            tone={st.arrearsMinor > 0 ? 'destructive' : 'success'}
+          />
+        </>
+      )}
+    </KpiStrip>
   );
 }

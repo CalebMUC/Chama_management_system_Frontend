@@ -1,9 +1,12 @@
 'use client';
 
 import { Badge, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
+import { useCurrency } from '@/hooks/useSessionInfo';
 import { formatDate } from '@/lib/format';
 import { label } from '@/lib/labels';
-import { EntryLink, MoneyText } from './Display';
+import { Amount } from './Amount';
+import { EntryLink } from './Display';
+import { Identifier } from './Identifier';
 import { EmptyState } from './States';
 
 export interface StatementLine {
@@ -19,7 +22,10 @@ export interface StatementLine {
   memo?: string | null;
 }
 
-/** Opening balance, lines with running balance, closing balance. Entry numbers link to the journal when an id is known. */
+/**
+ * A statement of account: opening balance, every movement with its running balance, closing balance. Figures are bare in
+ * columns headed with the currency, as on a bank statement. Entry numbers link to the journal when an id is known.
+ */
 export function StatementTable({ lines, opening, closing, currency, linkEntries = false }: {
   lines: StatementLine[];
   opening: number;
@@ -27,49 +33,56 @@ export function StatementTable({ lines, opening, closing, currency, linkEntries 
   currency?: string;
   linkEntries?: boolean;
 }) {
+  const chamaCurrency = useCurrency();
+  const cur = currency ?? chamaCurrency;
+  const debits = lines.reduce((s, l) => s + l.debitMinor, 0);
+  const credits = lines.reduce((s, l) => s + l.creditMinor, 0);
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead>Date</TableHead>
-            <TableHead>Entry</TableHead>
+            <TableHead className="w-28">Date</TableHead>
+            <TableHead className="w-20">Entry</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className="text-right">Debit</TableHead>
-            <TableHead className="text-right">Credit</TableHead>
-            <TableHead className="text-right">Balance</TableHead>
+            <TableHead>Reference</TableHead>
+            <TableHead className="text-right">Debit ({cur})</TableHead>
+            <TableHead className="text-right">Credit ({cur})</TableHead>
+            <TableHead className="text-right">Balance ({cur})</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow className="bg-muted/30 hover:bg-muted/30">
-            <TableCell colSpan={5} className="font-medium">Opening balance</TableCell>
-            <TableCell className="text-right font-medium"><MoneyText value={opening} currency={currency} /></TableCell>
+          <TableRow className="bg-panel-header/60 hover:bg-panel-header/60">
+            <TableCell colSpan={6} className="font-medium">Opening balance</TableCell>
+            <TableCell className="text-right font-medium"><Amount value={opening} currency={cur} bare /></TableCell>
           </TableRow>
           {lines.length === 0 && (
-            <TableRow className="hover:bg-transparent"><TableCell colSpan={6}><EmptyState title="No movements in this period" className="py-6" /></TableCell></TableRow>
+            <TableRow className="hover:bg-transparent"><TableCell colSpan={7}><EmptyState title="No movements in this period" className="py-6" /></TableCell></TableRow>
           )}
           {lines.map((l, i) => (
             <TableRow key={`${l.entryNumber}-${i}`}>
               <TableCell className="whitespace-nowrap">{formatDate(l.date)}</TableCell>
-              <TableCell>{linkEntries && l.entryId ? <EntryLink id={l.entryId} number={l.entryNumber} /> : `#${l.entryNumber}`}</TableCell>
-              <TableCell className="min-w-[14rem]">
+              <TableCell>{linkEntries && l.entryId ? <EntryLink id={l.entryId} number={l.entryNumber} /> : <span className="ident text-muted-foreground">#{l.entryNumber}</span>}</TableCell>
+              <TableCell className="min-w-[12rem]">
                 <span className="block">{l.description}</span>
                 <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="text-[10px]">{label(l.sourceType)}</Badge>
-                  {l.reference && <span>Ref {l.reference}</span>}
-                  {l.memo && <span>· {l.memo}</span>}
+                  <Badge variant="outline" className="h-4 text-[10px]">{label(l.sourceType)}</Badge>
+                  {l.memo && <span>{l.memo}</span>}
                 </span>
               </TableCell>
-              <TableCell className="text-right">{l.debitMinor ? <MoneyText value={l.debitMinor} currency={currency} /> : ''}</TableCell>
-              <TableCell className="text-right">{l.creditMinor ? <MoneyText value={l.creditMinor} currency={currency} /> : ''}</TableCell>
-              <TableCell className="text-right"><MoneyText value={l.balanceMinor} currency={currency} /></TableCell>
+              <TableCell>{l.reference ? <Identifier value={l.reference} /> : ''}</TableCell>
+              <TableCell className="text-right">{l.debitMinor ? <Amount value={l.debitMinor} currency={cur} bare /> : ''}</TableCell>
+              <TableCell className="text-right">{l.creditMinor ? <Amount value={l.creditMinor} currency={cur} bare /> : ''}</TableCell>
+              <TableCell className="text-right"><Amount value={l.balanceMinor} currency={cur} bare /></TableCell>
             </TableRow>
           ))}
         </TableBody>
         <TableFooter>
           <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={5}>Closing balance</TableCell>
-            <TableCell className="text-right"><MoneyText value={closing} currency={currency} /></TableCell>
+            <TableCell colSpan={4}>Closing balance · {lines.length} transaction{lines.length === 1 ? '' : 's'}</TableCell>
+            <TableCell className="text-right"><Amount value={debits} currency={cur} bare /></TableCell>
+            <TableCell className="text-right"><Amount value={credits} currency={cur} bare /></TableCell>
+            <TableCell className="text-right"><Amount value={closing} currency={cur} bare /></TableCell>
           </TableRow>
         </TableFooter>
       </Table>

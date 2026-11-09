@@ -55,8 +55,13 @@ const screens = [
   { name: 'journal', path: '/ledger/journal' },
   { name: 'statement', path: '/me/statement' },
   { name: 'loan-detail', path: '/loans/loan-0001' },
+  { name: 'journal-entry', path: '/ledger/journal/e0000000-0000-4000-8000-000000001284' },
+  { name: 'member-detail', path: '/members/u0000000-0000-4000-8000-000000000001' },
+  { name: 'account-statement', path: '/me/savings/acc-dep-7' },
   { name: 'record-contribution', path: '/contributions/new', flow: recordContribution },
   { name: 'shell', path: '/chama', flow: shellTools },
+  // Needs the dev server started with NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES (e.g. 2); jumps the clock past the limit.
+  { name: 'idle', path: '/home', flow: async (page, shot) => { await page.clock.install(); await page.clock.fastForward('02:10'); await page.getByRole('alertdialog').waitFor({ timeout: 5000 }); await page.waitForTimeout(300); await shot(''); } },
   { name: 'home-hidden', path: '/home', flow: async (page, shot) => { await page.getByRole('button', { name: 'Hide balances' }).first().click(); await page.waitForTimeout(300); await shot(''); } },
 ];
 

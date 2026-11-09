@@ -25,7 +25,7 @@ const TABS: { value: MembershipStatus | 'ALL'; label: string }[] = [
 ];
 
 const columns: ColumnDef<MemberView, unknown>[] = [
-  { id: 'number', header: '#', accessorFn: (m) => m.memberNumber ?? Number.MAX_SAFE_INTEGER, cell: ({ row }) => (row.original.memberNumber ? `#${row.original.memberNumber}` : '—') },
+  { id: 'number', header: 'Member #', accessorFn: (m) => m.memberNumber ?? Number.MAX_SAFE_INTEGER, meta: { numeric: true }, cell: ({ row }) => (row.original.memberNumber ? <span className="ident">{row.original.memberNumber}</span> : '—') },
   { id: 'name', header: 'Name', accessorFn: (m) => memberName(m), cell: ({ row }) => <span className="font-medium">{memberName(row.original)}</span> },
   {
     id: 'email',
@@ -38,7 +38,7 @@ const columns: ColumnDef<MemberView, unknown>[] = [
       </span>
     ),
   },
-  { id: 'phone', header: 'Phone', accessorFn: (m) => m.phoneNumber ?? '', cell: ({ row }) => row.original.phoneNumber ?? '—' },
+  { id: 'phone', header: 'Phone', accessorFn: (m) => m.phoneNumber ?? '', cell: ({ row }) => (row.original.phoneNumber ? <span className="ident">{row.original.phoneNumber}</span> : '—') },
   {
     id: 'roles',
     header: 'Roles',

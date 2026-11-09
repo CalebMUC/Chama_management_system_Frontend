@@ -9,7 +9,9 @@ import type { EntryView, LedgerSourceType } from '@/api/types';
 import { Can, Guard } from '@/components/shared/Can';
 import { DataTable, type ColumnDef } from '@/components/shared/DataTable';
 import { DateRangeFilter, type DateRangeValue } from '@/components/shared/DateRange';
+import { Amount } from '@/components/shared/Amount';
 import { MoneyText, PageHeader } from '@/components/shared/Display';
+import { Identifier } from '@/components/shared/Identifier';
 import { Button } from '@/components/ui/button';
 import { Badge, NativeSelect } from '@/components/ui/primitives';
 import { usePaged } from '@/hooks/usePaged';
@@ -21,10 +23,10 @@ import { label } from '@/lib/labels';
 const SOURCES: LedgerSourceType[] = ['CONTRIBUTION', 'PENALTY', 'PENALTY_PAYMENT', 'PENALTY_WAIVER', 'LOAN_DISBURSEMENT', 'LOAN_REPAYMENT', 'EXPENSE', 'INVESTMENT_FUNDING', 'INVESTMENT_DEPOSIT', 'INVESTMENT_INCOME', 'INVESTMENT_WITHDRAWAL', 'INVESTMENT_CLOSURE', 'OPENING_BALANCE', 'MANUAL', 'REVERSAL'];
 
 const columns: ColumnDef<EntryView, unknown>[] = [
-  { id: 'number', header: '#', accessorKey: 'number', cell: ({ row }) => <span className="font-medium text-primary">#{row.original.number}</span> },
+  { id: 'number', header: 'Entry', accessorKey: 'number', meta: { hideable: false }, cell: ({ row }) => <Identifier value={`#${row.original.number}`} label="journal entry number" copy={false} className="font-medium text-primary" /> },
   { id: 'date', header: 'Date', accessorKey: 'entryDate', cell: ({ row }) => <span className="whitespace-nowrap">{formatDate(row.original.entryDate)}</span> },
   { id: 'description', header: 'Description', accessorKey: 'description', cell: ({ row }) => <span className="line-clamp-2 min-w-[14rem]">{row.original.description}</span> },
-  { id: 'reference', header: 'Reference', accessorFn: (e) => e.reference ?? '', cell: ({ row }) => <span className="font-mono text-xs">{row.original.reference ?? ''}</span> },
+  { id: 'reference', header: 'Reference', accessorFn: (e) => e.reference ?? '', cell: ({ row }) => <Identifier value={row.original.reference} /> },
   {
     id: 'source',
     header: 'Source',
@@ -37,7 +39,7 @@ const columns: ColumnDef<EntryView, unknown>[] = [
       </span>
     ),
   },
-  { id: 'total', header: 'Total', accessorKey: 'totalMinor', meta: { align: 'right' }, cell: ({ row }) => <MoneyText value={row.original.totalMinor} /> },
+  { id: 'total', header: 'Amount (Dr = Cr)', accessorKey: 'totalMinor', meta: { numeric: true }, cell: ({ row }) => <Amount value={row.original.totalMinor} bare /> },
 ];
 
 export default function JournalPage() {
@@ -68,6 +70,7 @@ function Journal() {
         getRowId={(e) => e.id}
         onRowClick={(e) => router.push(`/ledger/journal/${e.id}`)}
         emptyTitle="No entries"
+        columnToggle
         toolbar={
           <>
             <DateRangeFilter value={range} onChange={setRange} />

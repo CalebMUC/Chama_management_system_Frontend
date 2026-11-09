@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 import { AmountSettingsProvider } from '@/components/shared/Amount';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/overlays';
 import { ConnectivityBanner, LicenceBanner } from '@/features/access/Banners';
+import { IdleTimeout } from '@/features/auth/IdleTimeout';
 import { usePreferences } from '@/stores/preferences';
+import { isMemberRoute } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { Header } from './Header';
 import { MobileTabBar } from './MobileTabBar';
 import { Sidebar, type ShellArea } from './Sidebar';
 
-/** My banking screens: where "Hide balances" applies. */
-export const isMemberRoute = (path: string) => path === '/home' || path.startsWith('/me/');
 
 /** Text-heavy pages keep a readable line length; everything else uses the full width. */
 const READABLE = ['/profile', '/settings/chama', '/settings/licence', '/settings/roles'];
@@ -50,6 +50,7 @@ export function AppShell({ children, area }: { children: ReactNode; area: ShellA
         </main>
       </div>
       {area === 'chama' && <MobileTabBar onMore={() => setMobileOpen(true)} />}
+      <IdleTimeout area={area} />
     </div>
   );
 }
