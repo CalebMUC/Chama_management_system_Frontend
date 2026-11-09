@@ -13,14 +13,17 @@ import { label } from '@/lib/labels';
 import { usePreferences, type Theme } from '@/stores/preferences';
 import { useSession } from '@/stores/session';
 import type { ShellArea } from './Sidebar';
+import { ApprovalsInbox, CommandSearch, EnvBadge, NewMenu, PeriodChip, PlanChip } from './TopBarTools';
+
+const nextTheme: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'light' };
+const themeIcon = (theme: Theme) => (theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor);
 
 export function ThemeToggle() {
   const theme = usePreferences((s) => s.theme);
   const set = usePreferences((s) => s.set);
-  const next: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'light' };
-  const Icon = theme === 'light' ? Sun : theme === 'dark' ? Moon : Monitor;
+  const Icon = themeIcon(theme);
   return (
-    <Button variant="ghost" size="icon" onClick={() => set('theme', next[theme])} aria-label={`Theme: ${theme}. Change theme`} title={`Theme: ${theme}`}>
+    <Button variant="ghost" size="icon" onClick={() => set('theme', nextTheme[theme])} aria-label={`Theme: ${theme}. Change theme`} title={`Theme: ${theme}`}>
       <Icon />
     </Button>
   );
@@ -31,6 +34,8 @@ export function UserMenu({ area }: { area: ShellArea }) {
   const membership = useSession((s) => s.membership);
   const [confirmAll, setConfirmAll] = useState(false);
   const density = usePreferences((s) => s.density);
+  const theme = usePreferences((s) => s.theme);
+  const ThemeIcon = themeIcon(theme);
   const setPref = usePreferences((s) => s.set);
   const name = fullName(user?.firstName, user?.lastName) ?? user?.email ?? '';
   const initials = name.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?';
@@ -45,7 +50,7 @@ export function UserMenu({ area }: { area: ShellArea }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Account menu">
-          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">{initials}</span>
+          <span className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuLabel className="font-normal">
@@ -60,6 +65,10 @@ export function UserMenu({ area }: { area: ShellArea }) {
               <Link href="/profile"><UserRound />Profile & security</Link>
             </DropdownMenuItem>
           )}
+          {/* The theme button is in the top bar from 640 px up; on phones it lives here. */}
+          <DropdownMenuItem className="sm:hidden" onSelect={(e) => { e.preventDefault(); setPref('theme', nextTheme[theme]); }}>
+            <ThemeIcon />Theme: {theme}
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setPref('density', density === 'compact' ? 'comfortable' : 'compact'); }}>
             {density === 'compact' ? <Rows3 /> : <Rows4 />}
             {density === 'compact' ? 'Comfortable rows' : 'Compact rows'}
@@ -89,19 +98,29 @@ export function Header({ onToggleSidebar, onOpenMobileNav, area }: { onToggleSid
   const chamaName = useSession((s) => s.chamaName);
   const chamaCode = useSession((s) => s.user?.chamaCode);
   return (
-    <header className="no-print sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur">
+    <header className="no-print sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-1.5 border-b bg-card px-2 sm:gap-2 sm:px-3">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobileNav} aria-label="Open menu"><Menu /></Button>
       <Button variant="ghost" size="icon" className="hidden lg:inline-flex" onClick={onToggleSidebar} aria-label="Toggle sidebar"><PanelLeft /></Button>
       {area === 'platform' ? (
-        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">Platform administration</span>
+        <span className="rounded-sm bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">Platform administration</span>
       ) : (
         <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-semibold">{chamaName ?? 'Your chama'}</span>
-          {chamaCode && <Badge variant="outline" className="hidden font-mono sm:inline-flex">{chamaCode}</Badge>}
+          <span className="truncate text-sm font-semibold" title={chamaName ?? undefined}>{chamaName ?? 'Your chama'}</span>
+          {chamaCode && <Badge variant="outline" className="hidden font-mono sm:inline-flex" title="Chama code">{chamaCode}</Badge>}
+          <PlanChip />
         </span>
       )}
+      <EnvBadge />
+      {area === 'chama' && <PeriodChip />}
       <div className="flex-1" />
-      <ThemeToggle />
+      {area === 'chama' && (
+        <>
+          <CommandSearch />
+          <ApprovalsInbox />
+          <NewMenu />
+        </>
+      )}
+      <span className="hidden sm:contents"><ThemeToggle /></span>
       <UserMenu area={area} />
     </header>
   );

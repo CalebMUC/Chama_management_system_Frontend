@@ -11,6 +11,8 @@ interface PreferencesState {
   sidebarCollapsed: boolean;
   /** Sidebar groups the user folded, by group label. */
   collapsedGroups: string[];
+  /** The sidebar workspace last chosen, for pages that belong to neither (profile). */
+  workspace: 'banking' | 'operations';
   /** Mask balances and account numbers on member (My banking) screens. */
   hideBalances: boolean;
   /** The licence-expiry banner was dismissed for this licence key until this day ("YYYY-MM-DD"). */
@@ -25,6 +27,7 @@ export const usePreferences = create<PreferencesState>()(
       density: 'compact',
       sidebarCollapsed: false,
       collapsedGroups: [],
+      workspace: 'banking',
       hideBalances: false,
       licenceBannerDismissed: null,
       set: (key, value) => set({ [key]: value } as Partial<PreferencesState>),

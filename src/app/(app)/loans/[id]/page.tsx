@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Banknote, Check, HandCoins, X } from 'lucide-react';
 import { loansApi } from '@/api/endpoints/loans';
@@ -65,6 +65,16 @@ function LoanView({ detail }: { detail: LoanDetailView }) {
   };
   const ownLoan = borrower ? 'This is your own loan; another official must handle it.' : null;
   const approveBlock = ownLoan ?? (guarantor ? "You're a guarantor on this loan, so you can't approve it." : approved ? 'You have already approved this loan.' : null);
+
+  // "+ New › Record loan repayment" lands here with ?action=repay: open the same dialog the button opens, under the same rules.
+  const router = useRouter();
+  const params = useSearchParams();
+  const canRepay = loan.status === 'ACTIVE' && can('LOAN_REPAYMENT_RECORD') && !ownLoan;
+  useEffect(() => {
+    if (params.get('action') !== 'repay') return;
+    if (canRepay) setDialog('repay');
+    router.replace(`/loans/${loan.id}`, { scroll: false });
+  }, [params, canRepay, loan.id, router]);
 
   return (
     <div className="space-y-5">

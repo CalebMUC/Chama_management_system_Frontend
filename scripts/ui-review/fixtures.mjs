@@ -319,6 +319,9 @@ const myStatement = () => ({
   generatedAt: iso(now),
 });
 
+/** Who is signed in: an official (TREASURER, broad permissions) or a plain member (shots.mjs --persona member). */
+export const persona = { official: true };
+
 // ---- Router -------------------------------------------------------------------------------------------------------------
 
 function paged(all, params, filter = () => true) {
@@ -355,7 +358,7 @@ export function resolve(method, path, params, body) {
   if (method !== 'GET') return { data: null, message: 'OK' };
 
   if (is('auth', 'me')) return { data: authMe };
-  if (is('members', 'me')) return { data: { membership: me, permissions: ALL_PERMISSIONS } };
+  if (is('members', 'me')) return persona.official ? { data: { membership: me, permissions: ALL_PERMISSIONS } } : { data: { membership: { ...me, roles: ['MEMBER'] }, permissions: ['LOAN_APPLY'] } };
   if (is('members')) return paged(members, params, (m) => !params.get('status') || m.status === params.get('status'));
   if (is('chama')) return { data: chama };
   if (is('chama', 'license')) return { data: licence };

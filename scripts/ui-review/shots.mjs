@@ -14,7 +14,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { resolve } from './fixtures.mjs';
+import { persona, resolve } from './fixtures.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
@@ -29,7 +29,7 @@ function arg(name, fallback) {
 }
 const label = arg('label');
 if (!label || label === true) {
-  console.error('Usage: npm run ui:shots -- --label <name> [--only a,b] [--widths 1440,390] [--themes light,dark] [--audit] [--base URL]');
+  console.error('Usage: npm run ui:shots -- --label <name> [--only a,b] [--widths 1440,390] [--themes light,dark] [--audit] [--persona member] [--base URL]');
   process.exit(1);
 }
 const base = String(arg('base', 'http://localhost:3000'));
@@ -38,6 +38,8 @@ const audit = !!arg('audit', false);
 const themes = String(arg('themes', 'light,dark')).split(',');
 const widths = String(arg('widths', audit ? '1280,1440,1920,390' : '1440,390')).split(',').map(Number);
 const HEIGHT = { 390: 844 };
+// --persona member: a plain member (no official permissions) instead of the treasurer.
+if (arg('persona') === 'member') persona.official = false;
 const outDir = path.join(here, 'out', label);
 mkdirSync(outDir, { recursive: true });
 
@@ -54,7 +56,37 @@ const screens = [
   { name: 'statement', path: '/me/statement' },
   { name: 'loan-detail', path: '/loans/loan-0001' },
   { name: 'record-contribution', path: '/contributions/new', flow: recordContribution },
+  { name: 'shell', path: '/chama', flow: shellTools },
 ];
+
+/** The top bar's tools: command palette (with a member search), approvals inbox, + New menu; on phones, the drawer. */
+async function shellTools(page, shot) {
+  const phone = page.viewportSize().width < 640;
+  await page.keyboard.press('Control+K');
+  await page.getByRole('dialog').waitFor();
+  await page.keyboard.type('wan');
+  await page.waitForTimeout(400);
+  await shot('1-palette');
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  if (phone) {
+    await page.getByRole('button', { name: 'More' }).click();
+    await page.waitForTimeout(400);
+    await shot('2-drawer');
+    return;
+  }
+  const inbox = page.getByRole('button', { name: /^Approvals/ });
+  if (!(await inbox.waitFor({ timeout: 3000 }).then(() => true, () => false))) return;
+  await inbox.click();
+  await page.waitForTimeout(300);
+  await shot('2-approvals');
+  await page.keyboard.press('Escape');
+  const newMenu = page.getByRole('button', { name: 'New transaction' });
+  if (!(await newMenu.waitFor({ timeout: 3000 }).then(() => true, () => false))) return; // plain members have no + New menu
+  await newMenu.click();
+  await page.waitForTimeout(300);
+  await shot('3-new');
+}
 
 /** Fills the Record contribution form, then walks through review/confirm (when the UI has it) to the result. */
 async function recordContribution(page, shot) {
