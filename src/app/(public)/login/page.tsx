@@ -10,7 +10,8 @@ export default function LoginPage() {
   const q = chama ? `?chama=${encodeURIComponent(chama)}` : '';
   return (
     <AuthLayout
-      title="Sign in"
+      title="Secure sign-in"
+      eyebrow="Member sign-in"
       description="Use the chama code your officials gave you."
       footer={
         <div className="space-y-1">

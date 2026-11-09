@@ -57,6 +57,7 @@ const screens = [
   { name: 'loan-detail', path: '/loans/loan-0001' },
   { name: 'record-contribution', path: '/contributions/new', flow: recordContribution },
   { name: 'shell', path: '/chama', flow: shellTools },
+  { name: 'home-hidden', path: '/home', flow: async (page, shot) => { await page.getByRole('button', { name: 'Hide balances' }).first().click(); await page.waitForTimeout(300); await shot(''); } },
 ];
 
 /** The top bar's tools: command palette (with a member search), approvals inbox, + New menu; on phones, the drawer. */

@@ -11,16 +11,19 @@ import { useBalancesHidden } from './Amount';
  * An identifier: account, loan, journal or member number, an M-Pesa or bank reference. Monospace with a copy button.
  * `sensitive` identifiers (account numbers) are masked to their last four characters while balances are hidden.
  */
-export function Identifier({ value, label = 'reference', href, sensitive, copy = true, className }: {
+export function Identifier({ value, label = 'reference', href, sensitive, masked, copy = true, className }: {
   value: string | number | null | undefined;
   /** What it is, for the copy button's accessible name ("Copy account number"). */
   label?: string;
   href?: string;
+  /** Masked while balances are hidden. */
   sensitive?: boolean;
+  /** Always masked (account tiles on member screens). Copying is off while masked. */
+  masked?: boolean;
   copy?: boolean;
   className?: string;
 }) {
-  const hidden = useBalancesHidden() && !!sensitive;
+  const hidden = (useBalancesHidden() && !!sensitive) || !!masked;
   const [copied, setCopied] = useState(false);
   if (value === null || value === undefined || value === '') return <span className="text-muted-foreground">—</span>;
   const text = String(value);

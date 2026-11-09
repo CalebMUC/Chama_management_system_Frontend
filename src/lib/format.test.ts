@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addDays, compactFigure, endOfDayNairobiInstant, formatBp, formatCompactMoney, formatDate, formatFigure, formatMoney, formatPeriodKey,
+  addDays, compactFigure, daysBetween, dueIn, endOfDayNairobiInstant, formatBp, formatCompactMoney, formatDate, formatFigure, formatMoney, formatPeriodKey,
   fractionDigits, humanize, maskIdentifier, memberLabel, minorToInput, parseMoney, parsePercentToBp,
 } from './format';
 
@@ -116,5 +116,21 @@ describe('labels', () => {
   it('shows members by number and name, never an id', () => {
     expect(memberLabel('Jane Wanjiku', 12)).toBe('#12 Jane Wanjiku');
     expect(memberLabel(null, null)).toBe('Unknown member');
+  });
+});
+
+describe('due dates', () => {
+  it('counts whole days between business dates', () => {
+    expect(daysBetween('2026-11-09', '2026-11-30')).toBe(21);
+    expect(daysBetween('2026-12-31', '2027-01-01')).toBe(1);
+    expect(daysBetween('2026-11-09', '2026-11-01')).toBe(-8);
+  });
+
+  it('describes how far away a due date is', () => {
+    expect(dueIn('2026-11-30', '2026-11-09')).toBe('in 21 days');
+    expect(dueIn('2026-11-10', '2026-11-09')).toBe('due tomorrow');
+    expect(dueIn('2026-11-09', '2026-11-09')).toBe('due today');
+    expect(dueIn('2026-11-08', '2026-11-09')).toBe('1 day overdue');
+    expect(dueIn('2026-11-01', '2026-11-09')).toBe('8 days overdue');
   });
 });

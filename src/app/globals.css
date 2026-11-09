@@ -40,6 +40,12 @@
     --sidebar: 222 52% 14%;
     --sidebar-foreground: 216 30% 93%;
     --sidebar-muted: 216 18% 66%;
+    /* The member balance hero: a navy card. Text tokens are re-pointed inside it (.hero) so amounts stay AA. */
+    --hero: 220 60% 18%;
+    --hero-foreground: 0 0% 100%;
+    --hero-muted: 216 30% 78%;
+    --hero-negative: 0 90% 80%;
+    --hero-positive: 150 60% 70%;
     /* Categorical, fixed order (validated: CVD ΔE ≥ 8, normal ≥ 15 vs #fff). Slots 3–5 are under 3:1, so charts ship with labels. */
     --chart-1: #2a78d6;
     --chart-2: #eb6834;
@@ -105,6 +111,8 @@
     --sidebar: 222 48% 6%;
     --sidebar-foreground: 216 30% 90%;
     --sidebar-muted: 216 14% 62%;
+    --hero: 219 50% 17%;
+    --hero-muted: 216 25% 75%;
     /* Same hues stepped for the dark card surface (validated vs #121826, all ≥ 3:1). */
     --chart-1: #3987e5;
     --chart-2: #d95926;
@@ -119,6 +127,24 @@
   * { @apply border-border; }
   html { -webkit-text-size-adjust: 100%; }
   body { @apply bg-background text-sm text-foreground antialiased; font-feature-settings: 'cv11' 1, 'ss01' 1; }
+}
+
+@layer components {
+  /* Inside the hero, muted, negative and positive text read on navy. */
+  .hero {
+    background-color: hsl(var(--hero));
+    color: hsl(var(--hero-foreground));
+    --muted-foreground: var(--hero-muted);
+    --destructive: var(--hero-negative);
+    --success: var(--hero-positive);
+    --ring: var(--hero-muted);
+  }
+  /* Public pages: a quiet navy backdrop with a soft lift behind the panel. */
+  .auth-backdrop {
+    background-image:
+      radial-gradient(60rem 30rem at 50% 40%, hsl(var(--primary) / 0.28), transparent 70%),
+      linear-gradient(180deg, hsl(var(--sidebar)), hsl(var(--sidebar)));
+  }
 }
 
 @layer utilities {

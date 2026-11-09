@@ -172,3 +172,21 @@ export function memberLabel(name: string | null | undefined, number: number | nu
 }
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-KE')} ${n === 1 ? one : many}`;
+
+/** Whole days from one business date to another ("YYYY-MM-DD"), without time-zone shifts: daysBetween('2026-11-09', '2026-11-30') = 21. */
+export function daysBetween(from: string, to: string): number {
+  const utc = (iso: string) => {
+    const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((utc(to) - utc(from)) / 86_400_000);
+}
+
+/** "in 21 days", "tomorrow", "today", "3 days overdue" for a due date, counted from today in Nairobi. */
+export function dueIn(iso: string, today = todayNairobi()): string {
+  const n = daysBetween(today, iso);
+  if (n === 0) return 'due today';
+  if (n === 1) return 'due tomorrow';
+  if (n > 1) return `in ${n} days`;
+  return `${-n} day${n === -1 ? '' : 's'} overdue`;
+}

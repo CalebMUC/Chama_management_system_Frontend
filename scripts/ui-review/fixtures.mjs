@@ -295,7 +295,7 @@ function statementLines(opening, monthly) {
   return Array.from({ length: 10 }, (_, k) => {
     const d = new Date(Date.UTC(2026, k + 1, 4)).toISOString().slice(0, 10);
     bal += monthly;
-    return { date: d, entryNumber: 1000 + k * 27, description: `Contribution ${new Date(Date.UTC(2026, k + 1, 1)).toLocaleString('en', { month: 'short' })} 2026`, reference: MPESA[k % MPESA.length], sourceType: 'CONTRIBUTION', debitMinor: 0, creditMinor: monthly, balanceMinor: bal };
+    return { date: k === 9 ? '2026-11-04' : k === 8 ? '2026-10-28' : d, entryNumber: 1000 + k * 27, description: `Contribution ${new Date(Date.UTC(2026, k + 1, 1)).toLocaleString('en', { month: 'short' })} 2026`, reference: MPESA[k % MPESA.length], sourceType: 'CONTRIBUTION', debitMinor: 0, creditMinor: monthly, balanceMinor: bal };
   });
 }
 
@@ -321,6 +321,12 @@ const myStatement = () => ({
 
 /** Who is signed in: an official (TREASURER, broad permissions) or a plain member (shots.mjs --persona member). */
 export const persona = { official: true };
+
+/** Keeps statement lines inside ?from/?to, as the API does. */
+function inRange(s, from, to) {
+  const keep = (l) => (!from || l.date >= from) && (!to || l.date <= to);
+  return { ...s, from: from ?? s.from, to: to ?? s.to, savings: s.savings.map((a) => ({ ...a, lines: a.lines.filter(keep) })), penalties: s.penalties && { ...s.penalties, lines: s.penalties.lines.filter(keep) } };
+}
 
 // ---- Router -------------------------------------------------------------------------------------------------------------
 
@@ -383,7 +389,7 @@ export function resolve(method, path, params, body) {
   if (is('ledger', 'entries', '*')) return { data: entries.find((e) => e.id === seg[2]) ?? entries[0] };
   if (is('ledger', 'me')) return { data: { memberUserId: me.userId, currency: KES, savingsMinor: 21_590_000, loansOutstandingMinor: 8_325_000, penaltiesOutstandingMinor: 20_000 } };
 
-  if (is('reports', 'members', 'me', 'statement')) return { data: myStatement() };
+  if (is('reports', 'members', 'me', 'statement')) return { data: inRange(myStatement(), params.get('from'), params.get('to')) };
   if (is('penalties', 'me')) return { data: { currency: KES, outstandingMinor: 20_000, penalties: [] } };
 
   return null;
