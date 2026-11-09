@@ -10,6 +10,7 @@ import { Can, Guard } from '@/components/shared/Can';
 import { DataTable, type ColumnDef } from '@/components/shared/DataTable';
 import { DateRangeFilter, type DateRangeValue } from '@/components/shared/DateRange';
 import { MoneyText, PageHeader, StatCard, StatusChip } from '@/components/shared/Display';
+import { KpiStrip } from '@/components/shared/Kpi';
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/primitives';
 import { ExpenseDialog } from '@/features/expenses/ExpenseDialog';
@@ -71,13 +72,13 @@ function Expenses() {
           <h2 className="font-medium">Summary</h2>
           <DateRangeFilter value={summaryRange} onChange={setSummaryRange} />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiStrip>
           <StatCard label="Paid" value={<MoneyText value={s?.paidMinor} />} hint={s && `${s.paidCount} expense${s.paidCount === 1 ? '' : 's'}`} icon={<Receipt />} />
           <StatCard label="Awaiting payment" value={<MoneyText value={s?.awaitingPaymentMinor} />} hint="Pending approval or approved" icon={<Clock />} tone="warning" />
           {(s?.byAccount ?? []).slice(0, 2).map((a) => (
             <StatCard key={a.accountCode} label={a.accountName} value={<MoneyText value={a.totalMinor} />} hint={`${a.count} paid`} />
           ))}
-        </div>
+        </KpiStrip>
         {(s?.byAccount.length ?? 0) > 2 && (
           <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {s!.byAccount.slice(2).map((a) => <li key={a.accountCode} className="flex justify-between"><span className="text-muted-foreground">{a.accountName}</span><MoneyText value={a.totalMinor} /></li>)}

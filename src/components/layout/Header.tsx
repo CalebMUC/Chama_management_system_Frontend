@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, Monitor, Moon, PanelLeft, Sun, UserRound, MonitorSmartphone } from 'lucide-react';
+import { LogOut, Menu, Monitor, Moon, PanelLeft, Rows3, Rows4, Sun, UserRound, MonitorSmartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/overlays';
 import { Badge } from '@/components/ui/primitives';
@@ -30,6 +30,8 @@ export function UserMenu({ area }: { area: ShellArea }) {
   const user = useSession((s) => s.user);
   const membership = useSession((s) => s.membership);
   const [confirmAll, setConfirmAll] = useState(false);
+  const density = usePreferences((s) => s.density);
+  const setPref = usePreferences((s) => s.set);
   const name = fullName(user?.firstName, user?.lastName) ?? user?.email ?? '';
   const initials = name.split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?';
   const roles = membership?.roles.filter((r) => r !== 'MEMBER') ?? [];
@@ -58,6 +60,10 @@ export function UserMenu({ area }: { area: ShellArea }) {
               <Link href="/profile"><UserRound />Profile & security</Link>
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setPref('density', density === 'compact' ? 'comfortable' : 'compact'); }}>
+            {density === 'compact' ? <Rows3 /> : <Rows4 />}
+            {density === 'compact' ? 'Comfortable rows' : 'Compact rows'}
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setConfirmAll(true)}><MonitorSmartphone />Sign out everywhere</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onSelect={signOut}><LogOut />Sign out</DropdownMenuItem>
@@ -83,7 +89,7 @@ export function Header({ onToggleSidebar, onOpenMobileNav, area }: { onToggleSid
   const chamaName = useSession((s) => s.chamaName);
   const chamaCode = useSession((s) => s.user?.chamaCode);
   return (
-    <header className="no-print sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur">
+    <header className="no-print sticky top-0 z-30 flex h-topbar shrink-0 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMobileNav} aria-label="Open menu"><Menu /></Button>
       <Button variant="ghost" size="icon" className="hidden lg:inline-flex" onClick={onToggleSidebar} aria-label="Toggle sidebar"><PanelLeft /></Button>
       {area === 'platform' ? (

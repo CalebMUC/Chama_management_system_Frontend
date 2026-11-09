@@ -206,6 +206,8 @@ async function auditPage(page) {
     const money = /\b(KES|Ksh)\b|\d{1,3}(,\d{3})+(\.\d+)?/;
     for (const el of document.querySelectorAll('main *')) {
       if (!(el instanceof HTMLElement) || el.children.length > 2) continue;
+      // Screen-reader-only text is clipped to 1px on purpose.
+      if (el.closest('.sr-only') || el.getBoundingClientRect().width <= 1) continue;
       const text = el.textContent?.trim() ?? '';
       if (!money.test(text) || text.length > 40) continue;
       const style = getComputedStyle(el);

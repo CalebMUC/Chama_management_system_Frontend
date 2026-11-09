@@ -18,17 +18,59 @@ export function fractionDigits(currency: string): number {
   return fractionCache.get(currency)!;
 }
 
-/** 150050, "KES" -> "KES 1,500.50". null -> "—". */
+const NBSP = ' ';
+const MINUS = '−';
+
+/** The figure without currency or sign: 150050 -> "1,500.50" (KES), 5000 -> "5,000" (UGX). */
+export function formatFigure(minor: number, currency = 'KES'): string {
+  const digits = fractionDigits(currency);
+  return (Math.abs(minor) / 10 ** digits).toLocaleString('en-KE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+/**
+ * 150050, "KES" -> "KES 1,500.50" (ISO code, as on bank statements; a no-break space keeps it on one line). Negative amounts
+ * take a minus sign. null -> "—". `symbol: false` gives the figure alone.
+ */
 export function formatMoney(minor: number | null | undefined, currency = 'KES', opts: { symbol?: boolean } = {}): string {
   if (minor === null || minor === undefined || Number.isNaN(minor)) return '—';
-  const digits = fractionDigits(currency);
-  const value = minor / 10 ** digits;
-  try {
-    if (opts.symbol === false) return value.toLocaleString('en-KE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-    return new Intl.NumberFormat('en-KE', { style: 'currency', currency }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(digits)}`;
+  const sign = minor < 0 ? MINUS : '';
+  if (opts.symbol === false) return `${sign}${formatFigure(minor, currency)}`;
+  return `${sign}${currency}${NBSP}${formatFigure(minor, currency)}`;
+}
+
+/** 2_099_450 (major units) -> "2.10M"; under 100,000 the whole figure with separators. Rounded half away from zero. */
+export function compactFigure(major: number): string {
+  const abs = Math.abs(major);
+  if (abs < 100_000) return abs.toLocaleString('en-KE', { maximumFractionDigits: 0 });
+  const units: [number, string, number][] = [[1e3, 'K', 1], [1e6, 'M', 2], [1e9, 'B', 2], [1e12, 'T', 2]];
+  for (let i = 0; i < units.length; i++) {
+    const [size, suffix, decimals] = units[i];
+    const next = units[i + 1];
+    if (next && abs >= next[0]) continue;
+    const scaled = (abs / size).toFixed(decimals);
+    // 999,999.6 would round to "1000.0K": promote it to the next unit ("1.00M").
+    if (next && Number(scaled) >= 1000) continue;
+    return `${scaled}${suffix}`;
   }
+  return abs.toLocaleString('en-KE', { maximumFractionDigits: 0 });
+}
+
+/**
+ * KPI tiles: 209945000, "KES" -> "KES 2.10M". Under 100,000 the exact amount is short enough to show in full ("KES 9,250.00").
+ * Pair it with the exact amount in a tooltip and aria-label (the Amount component does).
+ */
+export function formatCompactMoney(minor: number | null | undefined, currency = 'KES'): string {
+  if (minor === null || minor === undefined || Number.isNaN(minor)) return '—';
+  const major = Math.abs(minor) / 10 ** fractionDigits(currency);
+  const figure = major < 100_000 ? formatFigure(minor, currency) : compactFigure(major);
+  return `${minor < 0 ? MINUS : ''}${currency}${NBSP}${figure}`;
+}
+
+/** "UMJ-DEP-000007" -> "•••• 0007": the last four characters, for account numbers on shared screens. */
+export function maskIdentifier(value: string | null | undefined, visible = 4): string {
+  if (!value) return '—';
+  const tail = value.replace(/[^A-Za-z0-9]/g, '').slice(-visible);
+  return `••••${NBSP}${tail}`;
 }
 
 /** Minor units as a plain editable string: 150050 -> "1500.50", 500000 -> "5000". */

@@ -8,6 +8,7 @@ import type { ChamaDashboardView, PerformanceSection } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
 import { BarList } from '@/components/shared/Charts';
 import { EntryLink, MoneyText, PageHeader, Progress, Section, StatCard } from '@/components/shared/Display';
+import { KpiStrip } from '@/components/shared/Kpi';
 import { ErrorState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Badge, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
@@ -33,7 +34,7 @@ function Overview() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-72" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+        <KpiStrip>{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</KpiStrip>
         <Skeleton className="h-64" />
       </div>
     );
@@ -48,19 +49,18 @@ function Overview() {
         actions={<Button variant="outline" size="sm" onClick={() => q.refetch()} loading={q.isFetching}><RefreshCw />Refresh</Button>}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <KpiStrip>
         <StatCard label="Active members" value={d.members.active} hint={`${d.members.suspended} suspended · ${d.members.pendingApplications} applying`} icon={<Users />} href="/members" />
         <StatCard
           label="Cash"
           value={<MoneyText value={d.cash.totalMinor} currency={c} />}
           hint={<>Hand <MoneyText value={d.cash.cashOnHandMinor} currency={c} /> · Bank <MoneyText value={d.cash.bankMinor} currency={c} /> · M-Pesa <MoneyText value={d.cash.mobileMoneyMinor} currency={c} /></>}
           icon={<Wallet />}
-          tone="gold"
         />
         {d.savings && <StatCard label="Total savings" value={<MoneyText value={d.savings.totalMinor} currency={c} />} icon={<PiggyBank />} tone="success" href="/member-accounts" />}
         {d.loans && <StatCard label="Loans outstanding" value={<MoneyText value={d.loans.outstandingMinor} currency={c} />} hint={`${d.loans.activeLoans} active`} icon={<HandCoins />} href="/loans" />}
         {d.investments && <StatCard label="Investments" value={<MoneyText value={d.investments.marketValueMinor} currency={c} />} hint={`${d.investments.active} active · market value`} icon={<Briefcase />} href="/investments/portfolio" />}
-      </div>
+      </KpiStrip>
 
       <NeedsAttention d={d} />
 

@@ -32,7 +32,7 @@ export function AppShell({ children, area }: { children: ReactNode; area: ShellA
         <Header area={area} onToggleSidebar={() => setPref('sidebarCollapsed', !collapsed)} onOpenMobileNav={() => setMobileOpen(true)} />
         <ConnectivityBanner />
         {area === 'chama' && <LicenceBanner />}
-        <main className="mx-auto w-full max-w-7xl flex-1 p-4 md:p-6">{children}</main>
+        <main id="main" className="w-full min-w-0 flex-1 p-gutter">{children}</main>
       </div>
     </div>
   );
