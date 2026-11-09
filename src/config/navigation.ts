@@ -4,7 +4,7 @@ import {
   FileText, Gavel, HandCoins, Handshake, Home, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, Scale, ScrollText,
   Settings2, ShieldCheck, TrendingUp, Upload, UserRound, Users, Wallet,
 } from 'lucide-react';
-import type { LicenseFeature } from '@/api/types';
+import type { ChamaPermission, LicenseFeature } from '@/api/types';
 import type { Requirement } from '@/hooks/useSessionInfo';
 
 /** A live count beside an item, from GET /dashboard `pending` and GET /dashboard/me `loans.guaranteeRequests`. */
@@ -71,7 +71,6 @@ export const navigation: NavGroup[] = [
   {
     label: 'Money',
     items: [
-      { label: 'Record contribution', href: '/contributions/new', icon: Plus, permission: 'CONTRIBUTION_RECORD', feature: 'CONTRIBUTIONS' },
       { label: 'Contributions', href: '/contributions', icon: Wallet, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS', exact: true },
       { label: 'Periods', href: '/contributions/periods', icon: CalendarRange, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS' },
       { label: 'Standings', href: '/contributions/standings', icon: ListChecks, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS' },
@@ -111,6 +110,34 @@ export const platformNavigation: NavGroup[] = [
       { label: 'Onboard a chama', href: '/platform/chamas/new', icon: Plus },
     ],
   },
+];
+
+/**
+ * The "+ New" transaction menu and the command palette's New group: actions, not places, so they live here rather than in the
+ * sidebar. Each is gated like the screen it opens. `href` routes to an existing page; `dialog` opens an existing dialog.
+ */
+export interface NewAction {
+  id: 'contribution' | 'repayment' | 'expense' | 'journal';
+  label: string;
+  icon: LucideIcon;
+  permission: ChamaPermission;
+  feature?: LicenseFeature;
+  href?: string;
+  dialog?: 'repayment' | 'expense';
+}
+export const newActions: NewAction[] = [
+  { id: 'contribution', label: 'Record contribution', icon: Wallet, permission: 'CONTRIBUTION_RECORD', feature: 'CONTRIBUTIONS', href: '/contributions/new' },
+  { id: 'repayment', label: 'Record loan repayment', icon: HandCoins, permission: 'LOAN_REPAYMENT_RECORD', feature: 'LOANS', dialog: 'repayment' },
+  { id: 'expense', label: 'New expense', icon: Receipt, permission: 'EXPENSE_CREATE', feature: 'EXPENSES', dialog: 'expense' },
+  { id: 'journal', label: 'Post journal entry', icon: ArrowLeftRight, permission: 'LEDGER_POST', href: '/ledger/journal/new' },
+];
+
+/** The bottom tab bar on phones. Same features as the matching sidebar items; "More" opens the full menu. */
+export const mobileTabs: NavItem[] = [
+  { label: 'Home', href: '/home', icon: Home },
+  { label: 'Accounts', href: '/me/savings', icon: PiggyBank, feature: 'CONTRIBUTIONS' },
+  { label: 'Loans', href: '/me/loans', icon: HandCoins, feature: 'LOANS' },
+  { label: 'Statement', href: '/me/statement', icon: FileText, feature: 'REPORTS' },
 ];
 
 export const accountNavigation: NavItem[] = [

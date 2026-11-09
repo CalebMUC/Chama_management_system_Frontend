@@ -6,6 +6,10 @@ export const env = {
   /** The platform operator, shown on the licence screens. Either may be empty. */
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? '',
   supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '',
+  /** development | test | staging | production. A badge in the top bar shows it everywhere except production (or when unset). */
+  appEnv: process.env.NEXT_PUBLIC_APP_ENV ?? '',
+  /** From package.json (next.config.mjs). */
+  appVersion: process.env.NEXT_PUBLIC_APP_VERSION ?? '',
 } as const;
 
 export const APP_NAME = 'Chama';

@@ -295,7 +295,7 @@ function statementLines(opening, monthly) {
   return Array.from({ length: 10 }, (_, k) => {
     const d = new Date(Date.UTC(2026, k + 1, 4)).toISOString().slice(0, 10);
     bal += monthly;
-    return { date: d, entryNumber: 1000 + k * 27, description: `Contribution ${new Date(Date.UTC(2026, k + 1, 1)).toLocaleString('en', { month: 'short' })} 2026`, reference: MPESA[k % MPESA.length], sourceType: 'CONTRIBUTION', debitMinor: 0, creditMinor: monthly, balanceMinor: bal };
+    return { date: k === 9 ? '2026-11-04' : k === 8 ? '2026-10-28' : d, entryNumber: 1000 + k * 27, description: `Contribution ${new Date(Date.UTC(2026, k + 1, 1)).toLocaleString('en', { month: 'short' })} 2026`, reference: MPESA[k % MPESA.length], sourceType: 'CONTRIBUTION', debitMinor: 0, creditMinor: monthly, balanceMinor: bal };
   });
 }
 
@@ -318,6 +318,15 @@ const myStatement = () => ({
   penalties: { accountNumber: null, code: '1110', name: 'Penalties', openingBalanceMinor: 0, closingBalanceMinor: 20_000, lines: [{ date: '2026-09-11', entryNumber: 1190, description: 'Late contribution penalty · Sep 2026', reference: null, sourceType: 'PENALTY', debitMinor: 20_000, creditMinor: 0, balanceMinor: 20_000 }] },
   generatedAt: iso(now),
 });
+
+/** Who is signed in: an official (TREASURER, broad permissions) or a plain member (shots.mjs --persona member). */
+export const persona = { official: true };
+
+/** Keeps statement lines inside ?from/?to, as the API does. */
+function inRange(s, from, to) {
+  const keep = (l) => (!from || l.date >= from) && (!to || l.date <= to);
+  return { ...s, from: from ?? s.from, to: to ?? s.to, savings: s.savings.map((a) => ({ ...a, lines: a.lines.filter(keep) })), penalties: s.penalties && { ...s.penalties, lines: s.penalties.lines.filter(keep) } };
+}
 
 // ---- Router -------------------------------------------------------------------------------------------------------------
 
@@ -355,7 +364,7 @@ export function resolve(method, path, params, body) {
   if (method !== 'GET') return { data: null, message: 'OK' };
 
   if (is('auth', 'me')) return { data: authMe };
-  if (is('members', 'me')) return { data: { membership: me, permissions: ALL_PERMISSIONS } };
+  if (is('members', 'me')) return persona.official ? { data: { membership: me, permissions: ALL_PERMISSIONS } } : { data: { membership: { ...me, roles: ['MEMBER'] }, permissions: ['LOAN_APPLY'] } };
   if (is('members')) return paged(members, params, (m) => !params.get('status') || m.status === params.get('status'));
   if (is('chama')) return { data: chama };
   if (is('chama', 'license')) return { data: licence };
@@ -380,7 +389,7 @@ export function resolve(method, path, params, body) {
   if (is('ledger', 'entries', '*')) return { data: entries.find((e) => e.id === seg[2]) ?? entries[0] };
   if (is('ledger', 'me')) return { data: { memberUserId: me.userId, currency: KES, savingsMinor: 21_590_000, loansOutstandingMinor: 8_325_000, penaltiesOutstandingMinor: 20_000 } };
 
-  if (is('reports', 'members', 'me', 'statement')) return { data: myStatement() };
+  if (is('reports', 'members', 'me', 'statement')) return { data: inRange(myStatement(), params.get('from'), params.get('to')) };
   if (is('penalties', 'me')) return { data: { currency: KES, outstandingMinor: 20_000, penalties: [] } };
 
   return null;

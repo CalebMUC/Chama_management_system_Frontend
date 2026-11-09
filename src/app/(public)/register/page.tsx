@@ -68,6 +68,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Join your chama"
+      eyebrow="New member registration"
       description="Your officials approve your application before you can use the chama."
       footer={<p>Already a member? <Link href={`/login${code ? `?chama=${encodeURIComponent(code)}` : ''}`} className="font-medium text-primary hover:underline">Sign in</Link></p>}
     >
