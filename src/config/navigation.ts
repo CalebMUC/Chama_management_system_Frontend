@@ -1,14 +1,17 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity, ArrowLeftRight, BadgeCheck, BarChart3, BookOpen, Building2, CalendarRange, CircleDollarSign, ClipboardList, FileSpreadsheet,
-  FileText, Gavel, HandCoins, Handshake, Home, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, Scale, ScrollText,
+  FileText, Gavel, HandCoins, Handshake, Home, Inbox, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, ReceiptText, Scale, ScrollText, Send,
   Settings2, ShieldCheck, TrendingUp, Upload, UserRound, Users, Wallet,
 } from 'lucide-react';
 import type { ChamaPermission, LicenseFeature } from '@/api/types';
 import type { Requirement } from '@/hooks/useSessionInfo';
 
 /** A live count beside an item, from GET /dashboard `pending` and GET /dashboard/me `loans.guaranteeRequests`. */
-export type BadgeKey = 'applications' | 'loans' | 'expenses' | 'investments' | 'guarantees';
+export type BadgeKey = 'applications' | 'loans' | 'expenses' | 'investments' | 'guarantees' | 'payments';
+
+/** Who may review reported payments: any of the record permissions (each reviews its own kind). */
+export const REVIEW_PERMISSIONS: ChamaPermission[] = ['CONTRIBUTION_RECORD', 'PENALTY_RECORD', 'LOAN_REPAYMENT_RECORD'];
 
 export interface NavItem {
   label: string;
@@ -56,12 +59,14 @@ export const navigation: NavGroup[] = [
       { label: 'Guarantee requests', href: '/me/guarantees', icon: Handshake, feature: 'LOANS', badge: 'guarantees' },
       { label: 'My penalties', href: '/me/penalties', icon: Gavel, feature: 'PENALTIES' },
       { label: 'My statement', href: '/me/statement', icon: FileText, feature: 'REPORTS' },
+      { label: 'Report a payment', href: '/me/payments/new', icon: Send, permission: 'PAYMENT_SUBMIT' },
+      { label: 'My reported payments', href: '/me/payments', icon: ReceiptText, exact: true },
     ],
   },
   {
     label: 'Chama',
     items: [
-      { label: 'Dashboard', href: '/chama', icon: LayoutDashboard, permission: 'REPORT_VIEW_ALL' },
+      { label: 'Overview', href: '/chama', icon: LayoutDashboard, permission: 'CHAMA_VIEW' },
       { label: 'Members', href: '/members', icon: Users, permission: 'MEMBER_VIEW', badge: 'applications' },
       { label: 'Expenses', href: '/expenses', icon: Receipt, permission: 'EXPENSE_VIEW', feature: 'EXPENSES', badge: 'expenses' },
       { label: 'Investments', href: '/investments', icon: TrendingUp, permission: 'INVESTMENT_VIEW', feature: 'INVESTMENTS', badge: 'investments', exact: true },
@@ -74,6 +79,7 @@ export const navigation: NavGroup[] = [
       { label: 'Contributions', href: '/contributions', icon: Wallet, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS', exact: true },
       { label: 'Periods', href: '/contributions/periods', icon: CalendarRange, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS' },
       { label: 'Standings', href: '/contributions/standings', icon: ListChecks, permission: 'CONTRIBUTION_VIEW_ALL', feature: 'CONTRIBUTIONS' },
+      { label: 'Payments to confirm', href: '/payment-submissions', icon: Inbox, permission: REVIEW_PERMISSIONS, badge: 'payments' },
       { label: 'Member accounts', href: '/member-accounts', icon: Landmark, permission: 'MEMBER_ACCOUNTS_VIEW_ALL', feature: 'CONTRIBUTIONS' },
       { label: 'Loans', href: '/loans', icon: CircleDollarSign, permission: 'LOAN_VIEW_ALL', feature: 'LOANS', badge: 'loans' },
       { label: 'Penalties', href: '/penalties', icon: Gavel, permission: 'PENALTY_VIEW_ALL', feature: 'PENALTIES' },
@@ -117,7 +123,7 @@ export const platformNavigation: NavGroup[] = [
  * sidebar. Each is gated like the screen it opens. `href` routes to an existing page; `dialog` opens an existing dialog.
  */
 export interface NewAction {
-  id: 'contribution' | 'repayment' | 'expense' | 'journal';
+  id: 'contribution' | 'repayment' | 'expense' | 'journal' | 'report';
   label: string;
   icon: LucideIcon;
   permission: ChamaPermission;
@@ -130,6 +136,8 @@ export const newActions: NewAction[] = [
   { id: 'repayment', label: 'Record loan repayment', icon: HandCoins, permission: 'LOAN_REPAYMENT_RECORD', feature: 'LOANS', dialog: 'repayment' },
   { id: 'expense', label: 'New expense', icon: Receipt, permission: 'EXPENSE_CREATE', feature: 'EXPENSES', dialog: 'expense' },
   { id: 'journal', label: 'Post journal entry', icon: ArrowLeftRight, permission: 'LEDGER_POST', href: '/ledger/journal/new' },
+  // Every member may report a payment they made themselves; the treasurer confirms it.
+  { id: 'report', label: 'Report a payment I made', icon: Send, permission: 'PAYMENT_SUBMIT', href: '/me/payments/new' },
 ];
 
 /** The bottom tab bar on phones. Same features as the matching sidebar items; "More" opens the full menu. */

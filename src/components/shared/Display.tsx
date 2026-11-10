@@ -20,7 +20,7 @@ export function MoneyText({ value, currency, className, signed }: { value: numbe
 
 // Status colours (README §8.5). Colour is never the only signal: every chip has its text and an icon.
 const GREEN = ['ACTIVE', 'PAID', 'APPROVED', 'RECORDED', 'REPAID', 'ACCEPTED'];
-const AMBER = ['PROPOSED', 'PARTIALLY_PAID', 'PARTLY_PAID', 'DUE', 'OUTSTANDING', 'REQUESTED'];
+const AMBER = ['PENDING', 'PROPOSED', 'PARTIALLY_PAID', 'PARTLY_PAID', 'DUE', 'OUTSTANDING', 'REQUESTED'];
 const RED = ['OVERDUE', 'UNPAID', 'REJECTED', 'SUSPENDED', 'EXPIRED', 'DECLINED'];
 const GREY = ['CANCELLED', 'REVERSED', 'WAIVED', 'CLOSED', 'WITHDRAWN', 'EXITED', 'ARCHIVED'];
 

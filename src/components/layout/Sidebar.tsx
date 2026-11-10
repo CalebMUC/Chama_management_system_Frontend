@@ -83,6 +83,7 @@ const badgeLabels: Record<BadgeKey, string> = {
   expenses: 'expenses waiting for you',
   investments: 'investments waiting for approval',
   guarantees: 'guarantee requests',
+  payments: 'reported payments to confirm',
 };
 
 const workspaceIcons: Record<WorkspaceId, typeof Wallet> = { banking: Wallet, operations: Briefcase };

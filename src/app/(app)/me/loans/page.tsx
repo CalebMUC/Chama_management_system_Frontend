@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, HandCoins, Plus, UserPlus, XCircle } from 'lucide-react';
+import { ChevronDown, HandCoins, Plus, Send, UserPlus, XCircle } from 'lucide-react';
 import { loansApi } from '@/api/endpoints/loans';
 import type { LoanDetailView } from '@/api/types';
 import { Can, Guard } from '@/components/shared/Can';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { MoneyText, PageHeader, StatCard } from '@/components/shared/Display';
-import { MemberPicker } from '@/components/shared/MemberPicker';
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, Label } from '@/components/ui/primitives';
+import { GuarantorPicker } from '@/features/loans/GuarantorPicker';
+import { reportPaymentHref } from '@/features/submissions/submissionLinks';
 import { CANCELLABLE, LoanDetailBody, LoanFigures, LoanStatusLine, RepaidProgress } from '@/features/loans/LoanPanels';
 import { useApiMutation } from '@/hooks/useApiMutation';
 import { useMyUserId } from '@/hooks/useSessionInfo';
@@ -85,6 +86,11 @@ function LoanCard({ detail, defaultOpen }: { detail: LoanDetailView; defaultOpen
             <LoanDetailBody detail={detail} />
             {loan.borrowerUserId === me && (
               <div className="flex flex-wrap gap-2 border-t pt-4">
+                {loan.status === 'ACTIVE' && (
+                  <Can permission="PAYMENT_SUBMIT">
+                    <Button variant="outline" asChild><Link href={reportPaymentHref({ kind: 'LOAN_REPAYMENT', targetId: loan.id })}><Send />Report a repayment I made</Link></Button>
+                  </Can>
+                )}
                 {loan.status === 'PENDING_GUARANTORS' && <Button variant="outline" onClick={() => { setGuarantor(null); setAdding(true); }}><UserPlus />Add guarantor</Button>}
                 {CANCELLABLE.includes(loan.status) && <Button variant="outline" className="text-destructive" onClick={() => setCancelling(true)}><XCircle />Cancel application</Button>}
               </div>
@@ -114,7 +120,7 @@ function LoanCard({ detail, defaultOpen }: { detail: LoanDetailView; defaultOpen
       >
         <div className="space-y-1.5">
           <Label>Member</Label>
-          <MemberPicker value={guarantor} onChange={(id) => setGuarantor(id)} exclude={[me, ...existing]} />
+          <GuarantorPicker value={guarantor} onChange={(id) => setGuarantor(id)} exclude={existing} />
         </div>
       </ConfirmDialog>
     </Card>

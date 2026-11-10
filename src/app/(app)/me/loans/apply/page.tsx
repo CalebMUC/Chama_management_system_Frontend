@@ -11,14 +11,12 @@ import type { EligibilityView } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
 import { DetailList, MoneyText, PageHeader, Section } from '@/components/shared/Display';
 import { Field } from '@/components/shared/Field';
-import { MemberPicker } from '@/components/shared/MemberPicker';
 import { MoneyInput } from '@/components/shared/MoneyFields';
 import { ErrorState, FormAlert, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle, Badge, Input, NativeSelect, Textarea } from '@/components/ui/primitives';
-import { memberName, useMemberDirectory } from '@/hooks/useMembers';
-import { useMyUserId } from '@/hooks/useSessionInfo';
-import { formatBp, formatMoney, memberLabel, parseMoney } from '@/lib/format';
+import { candidateLabel, GuarantorPicker, useGuarantorCandidates } from '@/features/loans/GuarantorPicker';
+import { formatBp, formatMoney, parseMoney } from '@/lib/format';
 
 export default function ApplyPage() {
   return (
@@ -32,8 +30,8 @@ export default function ApplyPage() {
 function ApplyForLoan() {
   const router = useRouter();
   const qc = useQueryClient();
-  const me = useMyUserId();
-  const directory = useMemberDirectory();
+  // Plain members can't read the member directory: names come from the guarantor candidates.
+  const candidates = useGuarantorCandidates();
   const products = useQuery({ queryKey: ['loanProducts'], queryFn: loanProductsApi.list });
   const active = useMemo(() => (products.data ?? []).filter((p) => p.active), [products.data]);
   const [productId, setProductId] = useState<string>('');
@@ -188,11 +186,10 @@ function ApplyForLoan() {
                     {guarantors.length > 0 && (
                       <ul className="flex flex-wrap gap-2">
                         {guarantors.map((id) => {
-                          const m = directory.byUserId.get(id);
                           return (
                             <li key={id}>
                               <Badge variant="secondary" className="gap-1 py-1 pl-2.5 pr-1 text-sm">
-                                {m ? memberLabel(memberName(m), m.memberNumber) : 'Member'}
+                                {candidateLabel(candidates.byUserId.get(id))}
                                 <button type="button" onClick={() => setGuarantors((g) => g.filter((x) => x !== id))} className="rounded-full p-0.5 hover:bg-background" aria-label="Remove guarantor"><X className="size-3" /></button>
                               </Badge>
                             </li>
@@ -202,10 +199,10 @@ function ApplyForLoan() {
                     )}
                     {guarantors.length < 10 && (
                       <div className="max-w-sm">
-                        <MemberPicker
+                        <GuarantorPicker
                           value={null}
                           onChange={(id) => id && setGuarantors((g) => (g.includes(id) ? g : [...g, id]))}
-                          exclude={[me, ...guarantors]}
+                          exclude={guarantors}
                           placeholder={`Add a guarantor (${guarantors.length} of ${e.guarantorsRequired})`}
                           aria-invalid={!!errors.guarantorUserIds}
                         />
