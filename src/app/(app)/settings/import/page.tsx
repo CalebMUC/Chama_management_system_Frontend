@@ -1,19 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, History, Upload, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { importsApi } from '@/api/endpoints/books';
 import { normaliseError } from '@/api/errors';
-import type { ImportPreviewView, ImportProblemView, ImportSummaryView, ImportView } from '@/api/types';
+import type { ImportPreviewView, ImportSummaryView, ImportView } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DetailList, EntryLink, MoneyText, PageHeader, Section } from '@/components/shared/Display';
 import { ErrorState, FormAlert, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle, Badge, Input, Label, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
+import { Alert, AlertDescription, AlertTitle, Input, Label } from '@/components/ui/primitives';
+import { ImportProblems } from '@/features/imports/ImportProblems';
 import { useMemberDirectory } from '@/hooks/useMembers';
 import { formatDate, formatInstant, todayNairobi } from '@/lib/format';
 
@@ -88,6 +89,14 @@ function ImportWizard() {
   return (
     <div className="space-y-5">
       <PageHeader title="Import opening balances" description="Bring your chama's existing records in when you start using the system. This can be done only once." />
+      <Alert variant="info">
+        <History />
+        <AlertTitle>Want the full history instead?</AlertTitle>
+        <AlertDescription>
+          Opening balances bring in totals as at one day. To bring in every contribution, loan, penalty, investment and expense since
+          the chama started, use <Link href="/settings/import-history" className="text-primary underline">Import history</Link>. Use one or the other, not both.
+        </AlertDescription>
+      </Alert>
       <Section title="1. Prepare the file">
         <ol className="list-decimal space-y-1.5 pl-5 text-sm">
           <li>Create your savings products first in <Link href="/settings/savings-products" className="text-primary underline">Settings → Savings products</Link>; the template refers to them by code.</li>
@@ -121,7 +130,7 @@ function ImportWizard() {
               <Alert variant="destructive"><XCircle /><AlertTitle>{preview.errors} error{preview.errors === 1 ? '' : 's'} to fix</AlertTitle><AlertDescription>Correct the file and check it again.</AlertDescription></Alert>
             )}
             {preview.summary && <Summary s={preview.summary} />}
-            {preview.problems.length > 0 && <Problems problems={preview.problems} />}
+            {preview.problems.length > 0 && <ImportProblems problems={preview.problems} />}
             {preview.importable && (
               <div className="flex justify-end"><Button onClick={() => setConfirming(true)}><Upload />Import</Button></div>
             )}
@@ -162,45 +171,6 @@ function Summary({ s }: { s: ImportSummaryView }) {
   );
 }
 
-function Problems({ problems }: { problems: ImportProblemView[] }) {
-  const bySheet = useMemo(() => {
-    const m = new Map<string, ImportProblemView[]>();
-    for (const p of problems) m.set(p.sheet ?? 'Whole file', [...(m.get(p.sheet ?? 'Whole file') ?? []), p]);
-    return [...m.entries()];
-  }, [problems]);
-  return (
-    <div className="space-y-4">
-      {bySheet.map(([sheet, list]) => (
-        <div key={sheet} className="space-y-1.5">
-          <h3 className="text-sm font-semibold">{sheet}</h3>
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-28">Severity</TableHead>
-                  <TableHead className="w-16">Row</TableHead>
-                  <TableHead className="w-40">Column</TableHead>
-                  <TableHead>Problem</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((p, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{p.severity === 'ERROR' ? <Badge variant="destructive"><XCircle className="size-3" />Error</Badge> : <Badge variant="warning"><AlertTriangle className="size-3" />Warning</Badge>}</TableCell>
-                    <TableCell className="tabular">{p.row ?? '—'}</TableCell>
-                    <TableCell>{p.column ?? '—'}</TableCell>
-                    <TableCell>{p.message}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function Completed({ imp }: { imp: ImportView }) {
   const directory = useMemberDirectory();
   return (
@@ -220,7 +190,7 @@ function Completed({ imp }: { imp: ImportView }) {
           <p className="text-sm text-muted-foreground">New members were emailed a link to set their password.</p>
         </div>
       </Section>
-      {imp.warnings.length > 0 && <Section title="Warnings at import"><Problems problems={imp.warnings} /></Section>}
+      {imp.warnings.length > 0 && <Section title="Warnings at import"><ImportProblems problems={imp.warnings} /></Section>}
     </div>
   );
 }

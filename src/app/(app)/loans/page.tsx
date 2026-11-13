@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { loansApi } from '@/api/endpoints/loans';
+import { normaliseError } from '@/api/errors';
 import type { LoanStatus } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
 import { DataTable } from '@/components/shared/DataTable';
@@ -37,7 +40,11 @@ function LoanBook() {
   const list = usePaged(['loans', 'list'], { status: status === 'ALL' ? undefined : status, memberUserId: member ?? undefined }, loansApi.list);
   return (
     <div className="space-y-4">
-      <PageHeader title="Loans" description="Every loan application and loan in the chama." />
+      <PageHeader
+        title="Loans"
+        description="Every loan application and loan in the chama."
+        actions={<SchedulesButton />}
+      />
       <Tabs value={status} onValueChange={(v) => router.replace(v === 'ACTIVE' ? '/loans' : `/loans?status=${v}`)}>
         <TabsList className="h-auto flex-wrap">{TABS.map((t) => <TabsTrigger key={t} value={t}>{TAB_LABEL[t] ?? label(t)}</TabsTrigger>)}</TabsList>
       </Tabs>
@@ -59,4 +66,20 @@ function LoanBook() {
       />
     </div>
   );
+}
+
+/** Every loan being repaid, with its schedule: what each borrower owes, what is overdue and the next instalment. */
+function SchedulesButton() {
+  const [busy, setBusy] = useState(false);
+  async function download() {
+    setBusy(true);
+    try {
+      await loansApi.schedules();
+    } catch (e) {
+      toast.error(normaliseError(e).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <Button variant="outline" onClick={download} loading={busy}><Download />Loan schedules</Button>;
 }

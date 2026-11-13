@@ -27,6 +27,8 @@ export const loansApi = {
   addGuarantor: (id: string, guarantorUserId: string) => api.post<LoanDetailView>(`/loans/${id}/guarantors`, { guarantorUserId }),
   cancel: (id: string) => api.post<LoanDetailView>(`/loans/${id}/cancel`),
   // Officials
+  /** Every loan being repaid with its schedule (.xlsx): what each borrower owes, what is overdue, the next instalment. */
+  schedules: () => api.download('/loans/schedules', 'loan-schedules.xlsx'),
   list: (params: LoanListParams) => api.getPaged<LoanView>('/loans', params),
   get: (id: string) => api.get<LoanDetailView>(`/loans/${id}`),
   approve: (id: string, note?: string) => api.post<LoanDetailView>(`/loans/${id}/approve`, note ? { note } : {}),
