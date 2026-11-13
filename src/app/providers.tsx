@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/overlays';
-import { onAccessDenied, onLicenceBlocked, onNetworkError, onSessionExpired } from '@/api/client';
+import { onAccessDenied, onLicenceBlocked, onNetworkError, onPasswordChangeRequired, onSessionExpired } from '@/api/client';
 import { sessionStore } from '@/api/session';
 import { bootstrapSession, loginPath, refreshLicence, refreshMembership } from '@/features/auth/sessionActions';
 import { queryClient } from '@/lib/queryClient';
@@ -57,6 +57,12 @@ export function Providers({ children }: { children: ReactNode }) {
     });
     // ACCESS_DENIED: permissions may have changed (role change, suspension). Re-read them.
     onAccessDenied(() => void refreshMembership(true));
+    // The account still has an official's temporary password (e.g. a session from before it was flagged).
+    onPasswordChangeRequired(() => {
+      const user = useSession.getState().user;
+      if (user && !user.mustChangePassword) useSession.getState().setContext({ user: { ...user, mustChangePassword: true } });
+      if (!window.location.pathname.startsWith('/change-password')) router.replace('/change-password');
+    });
     onNetworkError(() => useConnectivity.getState().set(true));
     const onFocus = () => void refreshMembership();
     window.addEventListener('focus', onFocus);

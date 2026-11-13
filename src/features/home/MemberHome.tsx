@@ -3,10 +3,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertTriangle, ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarRange, CheckCircle2, ChevronRight, Eye, EyeOff, FileText, HandCoins,
-  Handshake, Landmark, Wallet,
-} from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Eye, EyeOff, FileText, Handshake, Landmark, ReceiptText, Send, Wallet } from 'lucide-react';
 import { reportsApi } from '@/api/endpoints/books';
 import type { MemberDashboardView, MemberStatementView } from '@/api/types';
 import { Amount } from '@/components/shared/Amount';
@@ -15,7 +12,7 @@ import { Identifier } from '@/components/shared/Identifier';
 import { Panel } from '@/components/shared/Panel';
 import { Skeleton } from '@/components/ui/primitives';
 import { useCan, useHasFeature } from '@/hooks/useSessionInfo';
-import { addDays, dueIn, formatDate, formatInstant, formatPeriodKey, todayNairobi, daysBetween } from '@/lib/format';
+import { addDays, formatDate, todayNairobi } from '@/lib/format';
 import { label } from '@/lib/labels';
 import { cn } from '@/lib/utils';
 import { usePreferences } from '@/stores/preferences';
@@ -39,44 +36,6 @@ export function BalancesToggle({ className, onHero }: { className?: string; onHe
       <Icon className="size-3.5" aria-hidden />
       {hidden ? 'Show balances' : 'Hide balances'}
     </button>
-  );
-}
-
-/** Total savings, loan balance and net position (savings less loans outstanding), as at the dashboard's time. */
-export function BalanceHero({ d }: { d: MemberDashboardView }) {
-  const savings = d.savings?.totalMinor ?? null;
-  const loans = d.loans?.outstandingMinor ?? null;
-  const net = savings !== null ? savings - (loans ?? 0) : null;
-  return (
-    <section aria-label="Balances" className="hero overflow-hidden rounded-lg">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
-        <p className="text-2xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Balances · as at {formatInstant(d.generatedAt)}</p>
-        <BalancesToggle onHero />
-      </div>
-      <div className="grid gap-4 px-4 py-4 sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-6">
-        {savings !== null && (
-          <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">Total savings</p>
-            <p className="mt-0.5 text-[1.75rem] font-semibold leading-tight tracking-tight"><Amount value={savings} currency={d.currency} /></p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{d.savings!.accounts.filter((a) => a.active).length} active account{d.savings!.accounts.filter((a) => a.active).length === 1 ? '' : 's'}</p>
-          </div>
-        )}
-        {loans !== null && (
-          <div className="min-w-0 sm:border-l sm:border-white/10 sm:pl-6">
-            <p className="text-xs text-muted-foreground">Loan balance</p>
-            <p className="mt-0.5 text-xl font-semibold leading-tight"><Amount value={loans} currency={d.currency} /></p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{d.loans!.activeLoans} active loan{d.loans!.activeLoans === 1 ? '' : 's'}</p>
-          </div>
-        )}
-        {net !== null && (
-          <div className="min-w-0 sm:border-l sm:border-white/10 sm:pl-6">
-            <p className="text-xs text-muted-foreground">Net position</p>
-            <p className="mt-0.5 text-xl font-semibold leading-tight"><Amount value={net} currency={d.currency} /></p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Savings less loans outstanding</p>
-          </div>
-        )}
-      </div>
-    </section>
   );
 }
 
@@ -114,75 +73,6 @@ export function AccountTiles({ d }: { d: MemberDashboardView }) {
   );
 }
 
-function Obligation({ icon, title, detail, value, alert, href }: { icon: ReactNode; title: ReactNode; detail?: ReactNode; value: ReactNode; alert?: boolean; href?: string }) {
-  const body = (
-    <>
-      <span className={cn('mt-0.5 shrink-0 [&_svg]:size-4', alert ? 'text-destructive' : 'text-muted-foreground')} aria-hidden>{alert ? <AlertTriangle /> : icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">{title}</span>
-        {detail && <span className={cn('block text-xs', alert ? 'text-destructive' : 'text-muted-foreground')}>{detail}</span>}
-      </span>
-      <span className="shrink-0 text-right text-sm font-semibold">{value}</span>
-      {href && <ChevronRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />}
-    </>
-  );
-  const cls = cn('flex items-start gap-2.5 px-[var(--panel-p)] py-2.5', alert && 'bg-destructive/[0.06]');
-  return <li>{href ? <Link href={href} className={cn(cls, 'hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none')}>{body}</Link> : <div className={cls}>{body}</div>}</li>;
-}
-
-/** What the member owes and when: next instalment, this period's contribution, arrears and penalties (highlighted when not zero). */
-export function Obligations({ d }: { d: MemberDashboardView }) {
-  const today = todayNairobi();
-  const c = d.currency;
-  const rows: ReactNode[] = [];
-  if (d.loans) {
-    const due = d.loans.nextDueDate;
-    rows.push(
-      <Obligation
-        key="instalment"
-        icon={<HandCoins />}
-        title="Next loan instalment"
-        detail={due ? <>{formatDate(due)} · {dueIn(due, today)}</> : 'Nothing due'}
-        value={due ? <Amount value={d.loans.nextDueMinor} currency={c} /> : '—'}
-        alert={!!due && daysBetween(today, due) < 0}
-        href="/me/loans"
-      />,
-    );
-  }
-  if (d.contributions) {
-    rows.push(
-      <Obligation
-        key="period"
-        icon={<CalendarRange />}
-        title={`Contribution · ${formatPeriodKey(d.contributions.currentPeriod)}`}
-        detail={d.contributions.latePeriods > 0 ? `${d.contributions.latePeriods} late period${d.contributions.latePeriods === 1 ? '' : 's'} so far` : 'No late periods'}
-        value={d.contributions.currentPeriodStatus ? <StatusChip status={d.contributions.currentPeriodStatus} /> : '—'}
-        href="/me/contributions"
-      />,
-    );
-    const arrears = d.contributions.arrearsMinor;
-    rows.push(
-      <Obligation key="c-arrears" icon={<CheckCircle2 />} title="Contribution arrears" detail={arrears > 0 ? 'Pay to an official to clear' : 'Up to date'} value={<Amount value={arrears} currency={c} />} alert={arrears > 0} />,
-    );
-  }
-  if (d.loans) {
-    const arrears = d.loans.arrearsMinor;
-    rows.push(<Obligation key="l-arrears" icon={<CheckCircle2 />} title="Loan arrears" detail={arrears > 0 ? 'Instalments past due' : 'Up to date'} value={<Amount value={arrears} currency={c} />} alert={arrears > 0} />);
-  }
-  if (d.penaltiesOutstandingMinor !== null) {
-    const owed = d.penaltiesOutstandingMinor;
-    rows.push(
-      <Obligation key="penalties" icon={<CheckCircle2 />} title="Penalties outstanding" detail={owed > 0 ? 'Pay to an official, who records it' : 'None'} value={<Amount value={owed} currency={c} />} alert={owed > 0} href="/me/penalties" />,
-    );
-  }
-  if (rows.length === 0) return null;
-  return (
-    <Panel title="What you owe" flush>
-      <ul className="divide-y">{rows}</ul>
-    </Panel>
-  );
-}
-
 /** Shortcuts, each gated as the screen it opens. */
 export function QuickActions({ d }: { d: MemberDashboardView }) {
   const can = useCan();
@@ -192,6 +82,8 @@ export function QuickActions({ d }: { d: MemberDashboardView }) {
     hasFeature('REPORTS') && { href: '/me/statement', label: 'Statement', icon: <FileText /> },
     d.loans && { href: '/me/guarantees', label: 'Guarantee requests', icon: <Handshake />, count: d.loans.guaranteeRequests },
     d.contributions && { href: '/me/contributions', label: 'My contributions', icon: <Wallet /> },
+    can('PAYMENT_SUBMIT') && { href: '/me/payments/new', label: 'Report a payment', icon: <Send /> },
+    { href: '/me/payments', label: 'My reported payments', icon: <ReceiptText />, count: d.submissions.pending },
   ].filter(Boolean) as { href: string; label: string; icon: ReactNode; count?: number }[];
   if (actions.length === 0) return null;
   return (

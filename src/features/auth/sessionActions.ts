@@ -14,6 +14,11 @@ import { useSession } from '@/stores/session';
 export async function loadContext(knownUser?: UserResponse): Promise<void> {
   const user = knownUser ?? (await authApi.me());
   const isPlatformAdmin = user.roles.includes('ROLE_ADMIN') && !user.chamaId;
+  if (user.mustChangePassword) {
+    // Nothing else answers until the temporary password is replaced; /change-password reloads the context after.
+    useSession.getState().setContext({ status: 'authenticated', user, isPlatformAdmin, membership: null, permissions: [], chama: null, licence: null, features: [] });
+    return;
+  }
   if (isPlatformAdmin) {
     useSession.getState().setContext({ status: 'authenticated', user, isPlatformAdmin: true, membership: null, permissions: [], chama: null, licence: null, features: [] });
     return;
@@ -79,7 +84,7 @@ export async function bootstrapSession() {
 let lastMembershipRefresh = 0;
 export async function refreshMembership(force = false) {
   const s = useSession.getState();
-  if (s.status !== 'authenticated' || s.isPlatformAdmin) return;
+  if (s.status !== 'authenticated' || s.isPlatformAdmin || s.user?.mustChangePassword) return;
   if (!force && Date.now() - lastMembershipRefresh < 15_000) return;
   lastMembershipRefresh = Date.now();
   try {

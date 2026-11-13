@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MailCheck, MailWarning, UserPlus } from 'lucide-react';
+import { Mail, MailCheck, MailWarning, UserPlus } from 'lucide-react';
 import type { MembershipStatus, MemberView } from '@/api/types';
 import { Can, Guard } from '@/components/shared/Can';
 import { DataTable, type ColumnDef } from '@/components/shared/DataTable';
@@ -10,6 +10,7 @@ import { PageHeader, StatusChip } from '@/components/shared/Display';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/overlays';
 import { Badge } from '@/components/ui/primitives';
+import { AddMemberDialog } from '@/features/members/AddMemberDialog';
 import { InviteDialog } from '@/features/members/InviteDialog';
 import { MemberActions } from '@/features/members/MemberActions';
 import { memberName, useMemberDirectory } from '@/hooks/useMembers';
@@ -71,6 +72,7 @@ function Members() {
   const status = (params.get('status') as MembershipStatus | 'ALL' | null) ?? 'ACTIVE';
   const directory = useMemberDirectory();
   const [inviting, setInviting] = useState(false);
+  const [adding, setAdding] = useState(false);
   const counts = useMemo(() => {
     const c: Record<string, number> = { ALL: directory.members.length };
     for (const m of directory.members) c[m.status] = (c[m.status] ?? 0) + 1;
@@ -83,7 +85,12 @@ function Members() {
       <PageHeader
         title="Members"
         description={`${counts.ACTIVE ?? 0} active members`}
-        actions={<Can permission="MEMBER_INVITE"><Button onClick={() => setInviting(true)}><UserPlus />Invite</Button></Can>}
+        actions={
+          <Can permission="MEMBER_INVITE">
+            <Button variant="outline" onClick={() => setInviting(true)}><Mail />Invite by email</Button>
+            <Button onClick={() => setAdding(true)}><UserPlus />Add member</Button>
+          </Can>
+        }
       />
       <Tabs value={status} onValueChange={(v) => router.replace(v === 'ACTIVE' ? '/members' : `/members?status=${v}`)}>
         <TabsList className="h-auto flex-wrap">
@@ -136,6 +143,7 @@ function Members() {
         )}
       />
       <InviteDialog open={inviting} onOpenChange={setInviting} />
+      <AddMemberDialog open={adding} onOpenChange={setAdding} />
     </div>
   );
 }

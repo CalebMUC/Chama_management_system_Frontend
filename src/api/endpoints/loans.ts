@@ -1,6 +1,6 @@
 import { api } from '../client';
 import type {
-  ApplyLoanRequest, DisburseRequest, EligibilityView, GuaranteeView, LoanDetailView, LoanListParams, LoanProductRequest,
+  ApplyLoanRequest, DisburseRequest, EligibilityView, GuarantorCandidate, GuaranteeView, LoanDetailView, LoanListParams, LoanProductRequest,
   LoanProductView, LoanView, MyLoansView, RepaymentRequest,
 } from '../types';
 
@@ -20,6 +20,8 @@ export const loansApi = {
   eligibility: (productId?: string) => api.get<EligibilityView>('/loans/eligibility', { productId }),
   apply: (body: ApplyLoanRequest) => api.post<LoanDetailView>('/loans', body),
   mine: () => api.get<MyLoansView>('/loans/me'),
+  /** Every active member except the caller (LOAN_APPLY). Plain members can't call GET /members, so pickers use this. */
+  guarantorCandidates: () => api.get<GuarantorCandidate[]>('/loans/guarantor-candidates'),
   guarantees: () => api.get<GuaranteeView[]>('/loans/guarantees'),
   respondGuarantee: (id: string, accept: boolean) => api.post<LoanDetailView>(`/loans/${id}/guarantee`, { accept }),
   addGuarantor: (id: string, guarantorUserId: string) => api.post<LoanDetailView>(`/loans/${id}/guarantors`, { guarantorUserId }),

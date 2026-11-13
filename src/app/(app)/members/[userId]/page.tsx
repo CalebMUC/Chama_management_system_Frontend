@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/primitives';
 import { StandingSummary } from '@/features/contributions/StandingSummary';
 import { paymentColumns } from '@/features/contributions/paymentColumns';
 import { LoanMobileCard, loanColumns } from '@/features/loans/loanColumns';
+import { KycPanel } from '@/features/members/KycPanel';
 import { MemberActions } from '@/features/members/MemberActions';
 import { FineDialog } from '@/features/penalties/FineDialog';
 import { PenaltyCard, penaltyColumns } from '@/features/penalties/penaltyColumns';
@@ -101,6 +102,7 @@ function MemberDetail() {
           <MemberActions member={m} inline />
         </div>
       </Panel>
+      <KycPanel member={m} />
 
       {tabs.length > 0 && (
         <Tabs defaultValue={tabs[0].value} className="overflow-hidden rounded-lg border bg-card">

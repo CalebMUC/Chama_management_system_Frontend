@@ -1,4 +1,4 @@
-import type { AccountType, ChamaPermission, ChamaRole, LicenseFeature } from '@/api/types';
+import type { AccountType, ChamaPermission, ChamaRole, Gender, IdDocumentType, LicenseFeature } from '@/api/types';
 import { humanize } from './format';
 
 // All user-facing enum labels in one place, so Swahili can be added later (README §8.6).
@@ -22,6 +22,10 @@ const overrides: Record<string, string> = {
   OPENING_BALANCE: 'Opening balance',
   CASH: 'Cash',
   BANK: 'Bank',
+  NATIONAL_ID: 'National ID',
+  ALIEN_ID: 'Alien ID',
+  MEMBER_KYC_RECORDED: 'Member KYC recorded',
+  MEMBER_KYC_UPDATED: 'Member KYC updated',
 };
 
 /** Human label for any enum value. Unknown values are title-cased. */
@@ -31,6 +35,18 @@ export const PAYMENT_METHODS = ['CASH', 'BANK', 'MPESA'] as const;
 
 export const ROLES: ChamaRole[] = ['MEMBER', 'TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR', 'ADMIN'];
 export const OFFICIAL_ROLES: ChamaRole[] = ['TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR', 'ADMIN'];
+
+export const ID_DOCUMENT_TYPES: IdDocumentType[] = ['NATIONAL_ID', 'PASSPORT', 'ALIEN_ID'];
+export const GENDERS: Gender[] = ['FEMALE', 'MALE', 'OTHER'];
+
+/** Kenya's 47 counties, for the KYC address. */
+export const KENYAN_COUNTIES = [
+  'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet', 'Embu', 'Garissa', 'Homa Bay', 'Isiolo', 'Kajiado',
+  'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia', 'Lamu',
+  'Machakos', 'Makueni', 'Mandera', 'Marsabit', 'Meru', 'Migori', 'Mombasa', "Murang'a", 'Nairobi', 'Nakuru', 'Nandi',
+  'Narok', 'Nyamira', 'Nyandarua', 'Nyeri', 'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi',
+  'Trans Nzoia', 'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot',
+] as const;
 
 export const FEATURE_LABELS: Record<LicenseFeature, string> = {
   CONTRIBUTIONS: 'Contributions & savings',
@@ -56,7 +72,7 @@ export const PERMISSION_GROUPS: { area: string; permissions: { key: ChamaPermiss
     area: 'Members',
     permissions: [
       { key: 'MEMBER_VIEW', unlocks: 'Member directory, roles list' },
-      { key: 'MEMBER_INVITE', unlocks: 'Invite by email' },
+      { key: 'MEMBER_INVITE', unlocks: 'Add members, invite by email, keep KYC details' },
       { key: 'MEMBER_APPROVE', unlocks: 'Approve/reject applications' },
       { key: 'MEMBER_SUSPEND', unlocks: 'Suspend/reactivate' },
       { key: 'MEMBER_ROLES_MANAGE', unlocks: "Change a member's roles" },

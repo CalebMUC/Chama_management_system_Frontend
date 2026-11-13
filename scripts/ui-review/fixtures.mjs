@@ -13,7 +13,10 @@ const ALL_PERMISSIONS = [
   'LOAN_APPROVE', 'LOAN_DISBURSE', 'LOAN_REPAYMENT_RECORD', 'PENALTY_VIEW_ALL', 'PENALTY_RECORD', 'PENALTY_WAIVE', 'EXPENSE_VIEW',
   'EXPENSE_CREATE', 'EXPENSE_APPROVE', 'INVESTMENT_VIEW', 'INVESTMENT_MANAGE', 'INVESTMENT_APPROVE', 'LEDGER_VIEW', 'LEDGER_POST',
   'LEDGER_ACCOUNTS_MANAGE', 'REPORT_VIEW_ALL', 'AUDIT_LOG_VIEW', 'PRODUCTS_MANAGE', 'MEMBER_ACCOUNTS_VIEW_ALL', 'MEMBER_ACCOUNTS_MANAGE',
+  'PAYMENT_SUBMIT',
 ];
+/** A plain member's default permissions (README §2.3): no MEMBER_VIEW, no REPORT_VIEW_ALL. */
+const MEMBER_PERMISSIONS = ['CHAMA_VIEW', 'LOAN_APPLY', 'EXPENSE_VIEW', 'INVESTMENT_VIEW', 'PAYMENT_SUBMIT'];
 const ALL_FEATURES = ['CONTRIBUTIONS', 'PENALTIES', 'EXPENSES', 'LOANS', 'INVESTMENTS', 'REPORTS', 'MPESA', 'SMS_NOTIFICATIONS'];
 
 // ---- Members ------------------------------------------------------------------------------------------------------------
@@ -129,11 +132,98 @@ const memberDashboard = () => ({
     totalMinor: myAccounts.reduce((s, a) => s + a.balanceMinor, 0),
     accounts: myAccounts.map((a) => ({ accountId: a.id, accountNumber: a.accountNumber, productCode: a.productCode, productName: a.productName, active: true, balanceMinor: a.balanceMinor })),
   },
-  contributions: { totalPaidMinor: 21_590_000, arrearsMinor: 0, advanceMinor: 250_000, latePeriods: 1, currentPeriod: '2026-11', currentPeriodStatus: 'PARTIALLY_PAID' },
-  loans: { activeLoans: 1, inProgress: 0, outstandingMinor: 8_325_000, arrearsMinor: 0, nextDueDate: '2026-11-30', nextDueMinor: 925_000, guaranteeRequests: 2 },
+  netPositionMinor: myAccounts.reduce((s, a) => s + a.balanceMinor, 0) - 8_325_000 - 20_000,
+  contributions: {
+    totalPaidMinor: 21_590_000, arrearsMinor: 0, advanceMinor: 250_000, latePeriods: 1, currentPeriod: '2026-11', currentPeriodStatus: 'PARTIALLY_PAID',
+    contributedYearToDateMinor: 5_250_000, complianceRateBasisPoints: 9091, rank: 4, rankOutOf: 17,
+  },
+  loans: {
+    activeLoans: 1, inProgress: 1, outstandingMinor: 8_325_000, arrearsMinor: 0, nextDueDate: '2026-11-30', nextDueMinor: 925_000, guaranteeRequests: 2,
+    totalBorrowedMinor: 25_000_000, totalRepaidMinor: 19_175_000,
+    loans: [
+      {
+        loanId: 'loan-0007', productName: 'Development loan', status: 'ACTIVE', purpose: 'Dairy unit', principalMinor: 10_000_000, interestMinor: 1_100_000,
+        totalDueMinor: 11_100_000, repaidMinor: 2_775_000, outstandingMinor: 8_325_000, arrearsMinor: 0, daysInArrears: 0, repaidBasisPoints: 2500, termMonths: 12,
+        appliedOn: '2026-07-20', disbursedOn: '2026-08-01', maturityDate: '2027-08-01', nextDueDate: '2026-11-30', nextDueMinor: 925_000,
+      },
+      {
+        loanId: 'loan-0016', productName: 'Emergency loan', status: 'PENDING_GUARANTORS', purpose: 'School fees', principalMinor: 3_000_000, interestMinor: 150_000,
+        totalDueMinor: 3_150_000, repaidMinor: 0, outstandingMinor: 0, arrearsMinor: 0, daysInArrears: 0, repaidBasisPoints: 0, termMonths: 3,
+        appliedOn: '2026-11-07', disbursedOn: null, maturityDate: null, nextDueDate: null, nextDueMinor: 0,
+      },
+    ],
+  },
   penaltiesOutstandingMinor: 20_000,
+  penalties: {
+    outstandingMinor: 20_000, outstandingCount: 1, paidMinor: 30_000, waivedMinor: 10_000,
+    outstanding: [{ penaltyId: 'pen-0003', kind: 'LATE_CONTRIBUTION', description: 'Late contribution · Sep 2026', assessedOn: '2026-09-06', amountMinor: 20_000, outstandingMinor: 20_000 }],
+  },
+  submissions: { pending: 1 },
+  topInvestments: rankedInvestments().slice(0, 3),
   generatedAt: iso(now),
 });
+
+function rankedInvestments() {
+  const rows = [
+    ['CIC Money Market Fund', 'MONEY_MARKET_FUND', 'CIC Asset Management', 'ACTIVE', 40_000_000, 44_287_500, 4_287_500, 0, 210, '2026-04-13', null],
+    ['Treasury bond FXD1/2024/10', 'TREASURY_BOND', 'Central Bank of Kenya', 'ACTIVE', 30_000_000, 31_100_000, 2_925_000, 25_000, 318, '2025-12-26', '2034-12-26'],
+    ['Stima SACCO shares', 'SACCO_SHARES', 'Stima SACCO', 'CLOSED', 10_000_000, 10_600_000, 900_000, 0, 365, '2025-06-01', null],
+    ['Plot 14, Bahati', 'REAL_ESTATE', null, 'ACTIVE', 15_000_000, 14_200_000, 0, 180_000, 96, '2026-08-05', null],
+    ['Equity Bank fixed deposit', 'FIXED_DEPOSIT', 'Equity Bank', 'ACTIVE', 5_000_000, 5_000_000, 0, 0, 12, '2026-10-28', '2027-04-28'],
+  ].map(([name, type, institution, status, invested, value, income, expenses, days, fundedOn, maturityDate], i) => {
+    const total = income - expenses + (value - invested);
+    const bp = Math.round((total / invested) * 10_000);
+    return {
+      rank: 0, investmentId: `inv-${pad(i + 1, 4)}`, name, type, institution, status, investedMinor: invested, marketValueMinor: value, incomeMinor: income,
+      expensesMinor: expenses, totalReturnMinor: total, returnBasisPoints: bp, annualisedReturnBasisPoints: days < 30 ? null : Math.round((bp * 365) / days),
+      daysHeld: days, profitable: total > 0, fundedOn, maturityDate,
+    };
+  });
+  return rows.sort((a, b) => b.returnBasisPoints - a.returnBasisPoints || b.totalReturnMinor - a.totalReturnMinor).map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+/** Contributors ranked for [from, to]: deterministic per member, scaled by the window's length. */
+function topMembers(from, to, limit) {
+  const months = Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / (30 * 86_400_000)));
+  const seated = members.filter((m) => m.memberNumber && m.status === 'ACTIVE');
+  const rows = seated.map((m, i) => {
+    const monthly = 500_000 + ((i * 7) % 5) * 250_000;
+    const paidShare = i % 6 === 5 ? 0 : 1 - (i % 4) * 0.1;
+    const contributed = Math.round(monthly * months * paidShare / 100) * 100;
+    const compliance = Math.max(4500, 10_000 - (i % 5) * 900 - (i % 7 === 3 ? 2600 : 0));
+    const arrears = compliance < 10_000 ? ((10_000 - compliance) / 10_000) * monthly * 3 : 0;
+    return {
+      rank: 0, memberUserId: m.userId, name: nameOf(m), memberNumber: m.memberNumber, contributedMinor: contributed, payments: Math.round(months * paidShare) || (contributed ? 1 : 0),
+      complianceRateBasisPoints: compliance, arrearsMinor: Math.round(arrears / 100) * 100, latePeriods: compliance < 10_000 ? Math.ceil((10_000 - compliance) / 1500) : 0,
+      savingsMinor: 6_000_000 + i * 850_000,
+    };
+  });
+  return rows
+    .filter((r) => r.contributedMinor > 0)
+    .sort((a, b) => b.contributedMinor - a.contributedMinor || b.complianceRateBasisPoints - a.complianceRateBasisPoints || a.memberNumber - b.memberNumber)
+    .slice(0, limit)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+/** `count` months ending with November 2026 (to date), oldest first. */
+function monthTrends(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const back = count - 1 - i;
+    const serial = 2026 * 12 + 10 - back; // November 2026 = 2026 * 12 + 10
+    const y = Math.floor(serial / 12);
+    const mIndex = serial % 12;
+    const partial = back === 0 ? 0.3 : 1;
+    const seed = (mIndex * 37 + y) % 11;
+    const income = Math.round((4_800_000 + seed * 220_000) * partial);
+    const expenses = Math.round((1_100_000 + ((seed * 3) % 7) * 180_000 + (mIndex === 6 ? 5_200_000 : 0)) * partial);
+    return {
+      month: `${y}-${String(mIndex + 1).padStart(2, '0')}`,
+      contributionsMinor: Math.round((8_250_000 + seed * 150_000) * partial), contributionPayments: Math.round((17 + (seed % 3)) * partial),
+      loansDisbursedMinor: [15_000_000, 0, 8_000_000, 25_000_000, 0, 12_000_000][(mIndex + y) % 6] * (back === 0 ? 0 : 1),
+      incomeMinor: income, expensesMinor: expenses, surplusMinor: income - expenses,
+    };
+  });
+}
 
 const entrySummaries = [];
 const SOURCES = ['CONTRIBUTION', 'CONTRIBUTION', 'LOAN_REPAYMENT', 'CONTRIBUTION', 'EXPENSE', 'LOAN_DISBURSEMENT', 'PENALTY_PAYMENT', 'INVESTMENT_INCOME', 'CONTRIBUTION', 'MANUAL'];
@@ -184,7 +274,12 @@ const chamaDashboard = () => ({
   asOf: '2026-11-09',
   currency: KES,
   features: ALL_FEATURES,
-  members: { active: 17, suspended: 1, pendingApplications: 2 },
+  keyFigures: {
+    totalContributionsMinor: 412_750_000, contributionsYearToDateMinor: 96_500_000, totalSavingsMinor: 356_020_000, cashMinor: 209_945_000,
+    loansOutstandingMinor: 128_450_000, investmentsMarketValueMinor: 105_187_500, penaltiesOutstandingMinor: 185_000, totalAssetsMinor: 443_767_500,
+    netWorthMinor: 87_747_500,
+  },
+  members: { active: 17, suspended: 1, pendingApplications: 2, joinedThisMonth: 1, joinedThisYear: 4 },
   cash: { cashOnHandMinor: 4_215_000, bankMinor: 168_480_000, mobileMoneyMinor: 37_250_000, totalMinor: 209_945_000 },
   savings: {
     totalMinor: 356_020_000,
@@ -194,16 +289,66 @@ const chamaDashboard = () => ({
       { productId: 'p-wel', code: 'WEL', name: 'Welfare', balanceMinor: 19_620_000 },
     ],
   },
-  contributions: { currentPeriod: '2026-11', dueDate: '2026-11-05', expectedMinor: 9_000_000, collectedMinor: 7_250_000, collectionRateBasisPoints: 8056, membersPaid: 13, membersLate: 3, arrearsMinor: 2_750_000, membersInArrears: 5 },
-  loans: { activeLoans: 9, outstandingMinor: 128_450_000, arrearsMinor: 3_725_000, loansInArrears: 2, par30BasisPoints: 640, awaitingApproval: 2, awaitingDisbursement: 1 },
+  contributions: {
+    currentPeriod: '2026-11', dueDate: '2026-11-05', expectedMinor: 9_000_000, collectedMinor: 7_250_000, collectionRateBasisPoints: 8056, membersPaid: 13, membersLate: 3,
+    arrearsMinor: 2_750_000, membersInArrears: 5, totalCollectedMinor: 412_750_000, collectedThisMonthMinor: 7_250_000, collectedYearToDateMinor: 96_500_000,
+    paymentsThisMonth: 16, complianceRateBasisPoints: 8820,
+  },
+  loans: {
+    activeLoans: 9, outstandingMinor: 128_450_000, arrearsMinor: 3_725_000, loansInArrears: 2, par30BasisPoints: 640, awaitingApproval: 2, awaitingDisbursement: 1,
+    aging: [
+      { bucket: 'CURRENT', label: 'Current', loans: 7, outstandingMinor: 107_250_000, arrearsMinor: 0 },
+      { bucket: 'DAYS_1_30', label: '1–30 days', loans: 1, outstandingMinor: 12_975_000, arrearsMinor: 925_000 },
+      { bucket: 'DAYS_31_60', label: '31–60 days', loans: 1, outstandingMinor: 8_225_000, arrearsMinor: 2_800_000 },
+      { bucket: 'DAYS_61_90', label: '61–90 days', loans: 0, outstandingMinor: 0, arrearsMinor: 0 },
+      { bucket: 'OVER_90', label: 'Over 90 days', loans: 0, outstandingMinor: 0, arrearsMinor: 0 },
+    ],
+    disbursedYearToDate: 11, disbursedYearToDateMinor: 160_000_000, totalDisbursedMinor: 342_000_000, totalRepaidMinor: 231_400_000, repaidLoans: 14,
+    interestExpectedMinor: 14_130_000, dueNext7Days: 3, dueNext7DaysMinor: 2_775_000,
+  },
   penaltiesOutstandingMinor: 185_000,
-  investments: { active: 3, investedMinor: 85_000_000, marketValueMinor: 95_012_500, incomeMinor: 10_012_500 },
+  penalties: {
+    outstandingMinor: 185_000, outstandingCount: 7, membersOwing: 4, assessedYearToDateMinor: 460_000, lateContributionYearToDateMinor: 310_000,
+    finesYearToDateMinor: 150_000, collectedYearToDateMinor: 245_000, waivedYearToDateMinor: 30_000,
+    topOwing: [3, 9, 12].map((n, i) => ({ memberUserId: members[n].userId, name: nameOf(members[n]), memberNumber: members[n].memberNumber, amountMinor: [80_000, 60_000, 25_000][i], count: [3, 2, 1][i] })),
+  },
+  investments: {
+    active: 4, investedMinor: 90_000_000, marketValueMinor: 94_587_500, incomeMinor: 7_212_500, bookValueMinor: 90_000_000, unrealisedGainMinor: 4_587_500,
+    totalReturnMinor: 12_595_000, returnBasisPoints: 1259, profitable: 3, closed: 1, maturingIn30Days: 0,
+  },
+  topMembers: topMembers('2026-01-01', '2026-11-09', 5),
+  topInvestments: rankedInvestments(),
   thisMonth: { from: '2026-11-01', to: '2026-11-09', incomeMinor: 6_412_500, expensesMinor: 1_870_000, surplusMinor: 4_542_500 },
   yearToDate: { from: '2026-01-01', to: '2026-11-09', incomeMinor: 58_930_000, expensesMinor: 14_260_000, surplusMinor: 44_670_000 },
-  pending: { membershipApplications: 2, loansAwaitingApproval: 2, loansAwaitingDisbursement: 1, expensesAwaitingApproval: 3, expensesAwaitingPayment: 1, investmentsAwaitingApproval: 1 },
+  trends: monthTrends(6),
+  pending: {
+    membershipApplications: 2, loansAwaitingApproval: 2, loansAwaitingDisbursement: 1, expensesAwaitingApproval: 3, expensesAwaitingPayment: 0, investmentsAwaitingApproval: 1,
+    paymentsAwaitingReview: 4, contributionsAwaitingReview: 3, penaltyPaymentsAwaitingReview: 0, loanRepaymentsAwaitingReview: 1,
+  },
   recentEntries: entrySummaries,
   generatedAt: iso(now),
 });
+
+// ---- Payment submissions ------------------------------------------------------------------------------------------------
+
+const submission = (i, m, kind, status, over = {}) => ({
+  id: `sub-${pad(i, 4)}`, memberUserId: m.userId, memberName: nameOf(m), memberNumber: m.memberNumber, kind,
+  targetId: kind === 'PENALTY_PAYMENT' ? 'pen-0003' : kind === 'LOAN_REPAYMENT' ? 'loan-0007' : null,
+  targetDescription: kind === 'PENALTY_PAYMENT' ? 'Late contribution · Sep 2026' : kind === 'LOAN_REPAYMENT' ? 'Loan: Dairy unit' : null,
+  amountMinor: { CONTRIBUTION: 500_000, PENALTY_PAYMENT: 20_000, LOAN_REPAYMENT: 925_000 }[kind], currency: KES, method: 'MPESA',
+  reference: MPESA[(i + 3) % MPESA.length].replace('QK', 'QL'), paidOn: `2026-11-${pad(9 - (i % 6), 2)}`, notes: i % 3 === 0 ? 'Paid from my husband’s line' : null,
+  status, submittedAt: `2026-11-${pad(9 - (i % 6), 2)}T0${6 + (i % 3)}:15:00Z`, reviewedBy: null, reviewerName: null, reviewedAt: null, reviewNote: null, cancelledAt: null,
+  ...over,
+});
+export const submissions = [
+  submission(1, members[3], 'CONTRIBUTION', 'PENDING'),
+  submission(2, members[9], 'LOAN_REPAYMENT', 'PENDING'),
+  submission(3, me, 'PENALTY_PAYMENT', 'PENDING'),
+  submission(4, members[12], 'CONTRIBUTION', 'PENDING', { method: 'BANK', reference: 'EQ-8841-2209' }),
+  submission(5, me, 'CONTRIBUTION', 'APPROVED', { paidOn: '2026-11-04', reviewedBy: members[0].userId, reviewerName: nameOf(members[0]), reviewedAt: '2026-11-04T15:02:00Z' }),
+  submission(6, me, 'LOAN_REPAYMENT', 'REJECTED', { paidOn: '2026-10-30', reviewedBy: members[0].userId, reviewerName: nameOf(members[0]), reviewedAt: '2026-10-31T08:40:00Z', reviewNote: 'Not on the M-Pesa statement for 30 Oct. Check the code and report again.' }),
+  submission(7, me, 'CONTRIBUTION', 'CANCELLED', { paidOn: '2026-10-28', cancelledAt: '2026-10-28T12:00:00Z' }),
+];
 
 // ---- Contributions ------------------------------------------------------------------------------------------------------
 
@@ -361,14 +506,47 @@ export function resolve(method, path, params, body) {
       message: 'Contribution recorded',
     };
   }
+  if (method === 'POST' && is('payment-submissions')) {
+    return { data: { ...submissions[0], id: 'sub-new', ...body, status: 'PENDING', submittedAt: iso(now) }, message: 'Payment reported. The treasurer will confirm it once they have checked it.' };
+  }
   if (method !== 'GET') return { data: null, message: 'OK' };
 
   if (is('auth', 'me')) return { data: authMe };
-  if (is('members', 'me')) return persona.official ? { data: { membership: me, permissions: ALL_PERMISSIONS } } : { data: { membership: { ...me, roles: ['MEMBER'] }, permissions: ['LOAN_APPLY'] } };
+  if (is('members', 'me')) return persona.official ? { data: { membership: me, permissions: ALL_PERMISSIONS } } : { data: { membership: { ...me, roles: ['MEMBER'] }, permissions: MEMBER_PERMISSIONS } };
+  if (is('dashboard', 'overview')) {
+    const { pending, topMembers, recentEntries, penaltiesOutstandingMinor, ...rest } = chamaDashboard();
+    return { data: { ...rest, penalties: { ...rest.penalties, topOwing: [] } } };
+  }
+  if (is('payment-submissions', 'me')) return paged(submissions.filter((s) => s.memberUserId === me.userId), params, (s) => !params.get('status') || s.status === params.get('status'));
+  if (is('payment-submissions', 'reviewable-kinds')) return { data: ['CONTRIBUTION', 'PENALTY_PAYMENT', 'LOAN_REPAYMENT'] };
+  if (is('payment-submissions', 'pending-count')) {
+    const mineExcluded = submissions.filter((s) => s.status === 'PENDING' && s.memberUserId !== me.userId);
+    const n = (kind) => mineExcluded.filter((s) => s.kind === kind).length;
+    return { data: { contributions: n('CONTRIBUTION'), penaltyPayments: n('PENALTY_PAYMENT'), loanRepayments: n('LOAN_REPAYMENT'), total: mineExcluded.length } };
+  }
+  if (is('payment-submissions')) {
+    return paged(submissions, params, (s) => (!params.get('status') || s.status === params.get('status')) && (!params.get('kind') || s.kind === params.get('kind')) && (!params.get('memberUserId') || s.memberUserId === params.get('memberUserId')));
+  }
+  if (is('loans', 'guarantor-candidates')) {
+    return { data: members.filter((m) => m.status === 'ACTIVE' && m.memberNumber && m.userId !== me.userId).map((m) => ({ userId: m.userId, memberNumber: m.memberNumber, name: nameOf(m) })) };
+  }
   if (is('members')) return paged(members, params, (m) => !params.get('status') || m.status === params.get('status'));
   if (is('chama')) return { data: chama };
   if (is('chama', 'license')) return { data: licence };
   if (is('dashboard', 'me')) return { data: memberDashboard() };
+  if (is('dashboard', 'top-members')) {
+    const to = params.get('to') ?? '2026-11-09';
+    const from = params.get('from') ?? `${to.slice(0, 4)}-01-01`;
+    if (from > to) return { status: 400, error: { code: 'REPORT_INVALID_PERIOD', message: 'The start date must be on or before the end date.' } };
+    const limit = Math.min(50, Math.max(1, Number(params.get('limit') ?? 10)));
+    return { data: { from, to, currency: KES, members: topMembers(from, to, limit) } };
+  }
+  if (is('dashboard', 'top-investments')) return { data: { currency: KES, investments: rankedInvestments().slice(0, Math.min(50, Math.max(1, Number(params.get('limit') ?? 5)))) } };
+  if (is('dashboard', 'trends')) {
+    const months = Number(params.get('months') ?? 12);
+    if (!(months >= 1 && months <= 24)) return { status: 400, error: { code: 'REPORT_INVALID_PERIOD', message: 'months must be between 1 and 24.' } };
+    return { data: { currency: KES, months: monthTrends(months) } };
+  }
   if (is('dashboard')) return { data: chamaDashboard() };
 
   if (is('contributions')) return paged(payments, params, (p) => (!params.get('memberUserId') || p.memberUserId === params.get('memberUserId')) && (!params.get('status') || p.status === params.get('status')));

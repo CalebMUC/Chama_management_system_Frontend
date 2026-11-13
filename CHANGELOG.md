@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased — Member self-service (backend 0524f80)
+
+API change: `src/api/types.ts` re-synced (PAYMENT_SUBMIT, submissions, ChamaOverviewView, GuarantorCandidate, SUBMISSION_* codes).
+
+- Chama overview for every member with CHAMA_VIEW: officials (REPORT_VIEW_ALL) keep GET /dashboard; everyone else gets
+  GET /dashboard/overview, without the work queue, top members, members owing most, recent entries or the trends drill-down.
+  Nav item renamed "Overview"; the member home links to it for CHAMA_VIEW.
+- Report a payment (`/me/payments/new`, PAYMENT_SUBMIT): contribution, penalty or loan repayment, capped at what is owed, with
+  review → send. Entry points: member home (header, quick actions, "I've paid this" on each penalty, "Report a repayment" on
+  each active loan), My penalties, My loans, My contributions, and "+ New".
+- My reported payments (`/me/payments`): status filter, Withdraw on pending reports, "Report again" on rejected ones.
+- Payments to confirm (`/payment-submissions`, any record permission): To confirm / All tabs, kind and member filters,
+  Confirm (optional note) and Reject (reason); a user's own reports can't be reviewed. Nav badge and approvals-inbox row use
+  GET /payment-submissions/pending-count (reviewable kinds, own reports excluded, no REPORT_VIEW_ALL needed), refreshed on
+  focus, every 3 minutes and after confirm/reject.
+- Guarantor pickers (apply, add guarantor) use GET /loans/guarantor-candidates; plain members no longer need GET /members.
+  The member picker's popover is now the shared `OptionPicker`.
+
+## Unreleased — Dashboards (backend docs/frontend/DASHBOARDS.md)
+
+API change: `src/api/types.ts` re-synced with the backend's `api-types.ts` (new dashboard fields); three new endpoints.
+
+- Chama overview (`/chama`, GET /dashboard): seven key figures, Needs attention (including reported payments to review), section
+  cards for members, contributions, loans (with ageing), penalties, investments, savings, cash and performance, top members and
+  top investments, a six-month trend chart and recent entries. Polls every 3 minutes while open.
+- Top members (`/chama/top-members`, GET /dashboard/top-members): This month / This year / Last year / Custom range and
+  10 / 25 / 50 rows, kept in the URL.
+- Top investments (`/investments/top`, GET /dashboard/top-investments): every funded investment by return; reachable by plain
+  members with INVESTMENT_VIEW.
+- Trends (`/chama/trends`, GET /dashboard/trends): 6 / 12 / 24 months, chart and table.
+- Member home: net position from the server with its breakdown; contributions (compliance, rank), loans (one row per loan with
+  repayment progress), penalties (each outstanding item), pending payment reports and "Our investments" cards.
+- Dashboard query keys live in `dashboardKeys`, all under the `dashboard` prefix.
+- Drill-downs redirect instead of showing an error: no permission → `/home`; feature not licensed → back to the overview.
+
 ## Unreleased — Banking UI redesign, phases 2–4
 
 Presentation only: no API, session, permission, licence, query-key or schema changes. See docs/UI_REDESIGN.md and docs/BACKEND_ASKS.md.

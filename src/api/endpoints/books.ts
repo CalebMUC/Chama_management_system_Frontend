@@ -1,9 +1,9 @@
 import { api } from '../client';
 import type {
-  AuditLogEntry, AuditLogParams, CashBookView, ChamaDashboardView, ContributionReportView, CreateLedgerAccountRequest, DateRangeParams,
+  AuditLogEntry, AuditLogParams, CashBookView, ChamaDashboardView, ChamaOverviewView, ContributionReportView, CreateLedgerAccountRequest, DateRangeParams,
   EntryView, FinancialPositionView, ImportPreviewView, ImportView, IncomeStatementView, LedgerAccountView, LedgerEntryListParams,
   LedgerStatementView, LoanPortfolioView, ManualEntryRequest, MemberBalancesView, MemberDashboardView, MemberStatementView,
-  SavingsRegisterView, TrialBalanceView,
+  SavingsRegisterView, TopInvestmentsView, TopMembersView, TrendsView, TrialBalanceView,
 } from '../types';
 
 /** §12 Ledger: double-entry books. Entries are reversed, never edited. */
@@ -20,10 +20,32 @@ export const ledgerApi = {
   mine: () => api.get<MemberBalancesView>('/ledger/me'),
 };
 
-/** §13 Dashboards. Sections for unlicensed features are null. */
+/** §13 Dashboards (DASHBOARDS.md). Sections for unlicensed features are null. */
 export const dashboardApi = {
   chama: () => api.get<ChamaDashboardView>('/dashboard'),
   mine: () => api.get<MemberDashboardView>('/dashboard/me'),
+  /** The chama-wide totals for every member (CHAMA_VIEW): no work queue, no member names, no ledger detail. */
+  overview: () => api.get<ChamaOverviewView>('/dashboard/overview'),
+  /** Ranked by contributions in [from, to]; the server defaults the range to this year and clamps limit to 1–50. */
+  topMembers: (params: { from?: string; to?: string; limit?: number }) => api.get<TopMembersView>('/dashboard/top-members', params),
+  /** Funded investments ranked by return; limit clamped to 1–50. */
+  topInvestments: (limit?: number) => api.get<TopInvestmentsView>('/dashboard/top-investments', { limit }),
+  /** Monthly series, oldest first, ending with this month to date. months must be 1–24. */
+  trends: (months?: number) => api.get<TrendsView>('/dashboard/trends', { months }),
+};
+
+/**
+ * Dashboard query keys, all under the `dashboard` prefix so invalidating ['dashboard'] refreshes the drill-downs too
+ * (DASHBOARDS.md "Query keys").
+ */
+export const dashboardKeys = {
+  all: ['dashboard'] as const,
+  chama: ['dashboard', 'chama'] as const,
+  overview: ['dashboard', 'overview'] as const,
+  me: ['dashboard', 'me'] as const,
+  topMembers: (from?: string, to?: string, limit?: number) => ['dashboard', 'topMembers', { from, to, limit }] as const,
+  topInvestments: (limit?: number) => ['dashboard', 'topInvestments', { limit }] as const,
+  trends: (months?: number) => ['dashboard', 'trends', { months }] as const,
 };
 
 /** §14 Reports (feature REPORTS). JSON only: CSV and print are client-side. */

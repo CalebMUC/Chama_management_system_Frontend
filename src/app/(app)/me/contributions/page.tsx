@@ -1,13 +1,16 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { AlertTriangle, Send } from 'lucide-react';
 import { contributionsApi } from '@/api/endpoints/savings';
 import type { MyPeriodView } from '@/api/types';
-import { Guard } from '@/components/shared/Can';
+import { Can, Guard } from '@/components/shared/Can';
 import { DataTable, type ColumnDef } from '@/components/shared/DataTable';
 import { MoneyText, PageHeader, Section, StatusChip } from '@/components/shared/Display';
 import { ErrorState, LoadingState } from '@/components/shared/States';
+import { Button } from '@/components/ui/button';
+import { reportPaymentHref } from '@/features/submissions/submissionLinks';
 import { StandingSummary } from '@/features/contributions/StandingSummary';
 import { paymentColumns } from '@/features/contributions/paymentColumns';
 import { formatDate, formatPeriodKey } from '@/lib/format';
@@ -47,7 +50,11 @@ function MyContributions() {
   const d = q.data;
   return (
     <div className="space-y-5">
-      <PageHeader title="My contributions" description="Pay through an official; they record it here with your receipt reference." />
+      <PageHeader
+        title="My contributions"
+        description="Paid by M-Pesa or at the bank? Report it and the treasurer records it here once they have checked it."
+        actions={<Can permission="PAYMENT_SUBMIT"><Button asChild><Link href={reportPaymentHref({ kind: 'CONTRIBUTION' })}><Send />Report a contribution</Link></Button></Can>}
+      />
       <StandingSummary standing={d.standing} />
       <Section title="Periods">
         <DataTable

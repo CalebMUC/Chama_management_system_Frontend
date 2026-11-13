@@ -135,7 +135,9 @@ export type ChamaPermission =
   | 'AUDIT_LOG_VIEW'
   | 'PRODUCTS_MANAGE'
   | 'MEMBER_ACCOUNTS_VIEW_ALL'
-  | 'MEMBER_ACCOUNTS_MANAGE';
+  | 'MEMBER_ACCOUNTS_MANAGE'
+  /** Report a payment you made yourself, for the treasurer to confirm. */
+  | 'PAYMENT_SUBMIT';
 
 export const ALL_PERMISSIONS: readonly ChamaPermission[] = [
   'CHAMA_VIEW', 'CHAMA_SETTINGS_MANAGE',
@@ -148,6 +150,7 @@ export const ALL_PERMISSIONS: readonly ChamaPermission[] = [
   'LEDGER_VIEW', 'LEDGER_POST', 'LEDGER_ACCOUNTS_MANAGE',
   'REPORT_VIEW_ALL', 'AUDIT_LOG_VIEW',
   'PRODUCTS_MANAGE', 'MEMBER_ACCOUNTS_VIEW_ALL', 'MEMBER_ACCOUNTS_MANAGE',
+  'PAYMENT_SUBMIT',
 ] as const;
 
 /** PENDING_APPROVAL -> ACTIVE <-> SUSPENDED; PENDING_APPROVAL -> REJECTED. EXITED is reserved (no endpoint yet). */
@@ -318,6 +321,11 @@ export interface UserResponse {
   lastName: string;
   roles: PlatformRole[];
   createdAt: ISOInstant;
+  /**
+   * The password is a temporary one an official set (POST /members). Until it is changed through
+   * POST /auth/password/change, every other endpoint answers 403 AUTH_PASSWORD_CHANGE_REQUIRED.
+   */
+  mustChangePassword: boolean;
 }
 
 // =====================================================================================================
@@ -491,6 +499,47 @@ export interface InvitationView {
 export interface InviteMemberRequest {
   email: string;
 }
+/** POST /members (MEMBER_INVITE): an official opens an ACTIVE member's account. */
+export interface AddMemberRequest {
+  firstName: string; // max 100
+  lastName: string; // max 100
+  email: string; // max 255
+  phoneNumber: string; // max 20, same formats as RegisterRequest
+  /** Password rules as RegisterRequest. The member must replace it at first sign-in. */
+  temporaryPassword: string;
+  kyc: KycRequest;
+}
+
+export type IdDocumentType = 'NATIONAL_ID' | 'PASSPORT' | 'ALIEN_ID';
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
+
+/** PUT /members/{id}/kyc (MEMBER_INVITE), and the `kyc` of AddMemberRequest. */
+export interface KycRequest {
+  idType: IdDocumentType;
+  /** Spaces and dashes are dropped and letters upper-cased. NATIONAL_ID: 5–10 digits; others: 5–20 letters/digits. */
+  idNumber: string;
+  /** The member must be at least 18 (MEMBER_UNDER_AGE). */
+  dateOfBirth: ISODate;
+  gender: Gender;
+  county: string; // max 60
+  town?: string | null; // max 100
+  physicalAddress?: string | null; // max 300
+}
+
+/** GET /members/{id}/kyc (MEMBER_VIEW): null when nothing was recorded yet. */
+export interface MemberKycView {
+  membershipId: UUID;
+  idType: IdDocumentType;
+  idNumber: string;
+  dateOfBirth: ISODate;
+  gender: Gender;
+  county: string;
+  town: string | null;
+  physicalAddress: string | null;
+  updatedBy: UUID;
+  updatedAt: ISOInstant;
+}
+
 export interface SuspendMemberRequest {
   reason: string; // max 500
 }
@@ -891,6 +940,79 @@ export interface MyLoansView {
 export interface GuaranteeView {
   loan: LoanView;
   myStatus: GuarantorStatus;
+}
+
+/** GET /loans/guarantor-candidates: every active member except the caller. */
+export interface GuarantorCandidate {
+  userId: UUID;
+  memberNumber: number | null;
+  name: string;
+}
+
+// ---- Payment submissions (/payment-submissions) ----------------------------------------------
+
+export type SubmissionKind = 'CONTRIBUTION' | 'PENALTY_PAYMENT' | 'LOAN_REPAYMENT';
+export type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+/** POST /payment-submissions */
+export interface SubmitPaymentRequest {
+  kind: SubmissionKind;
+  /** The penalty (PENALTY_PAYMENT) or loan (LOAN_REPAYMENT); omit for CONTRIBUTION. */
+  targetId?: UUID;
+  amountMinor: Minor;
+  method: PaymentMethod;
+  /** Required unless method is CASH: the M-Pesa code or bank slip number. Max 100. */
+  reference?: string;
+  /** Defaults to today; never in the future. */
+  paidOn?: ISODate;
+  /** Max 300. */
+  notes?: string;
+}
+
+/**
+ * GET /payment-submissions/pending-count: pending reports the caller can act on (their reviewable
+ * kinds, not their own reports). Use for the nav badge.
+ */
+export interface SubmissionReviewCounts {
+  contributions: number;
+  penaltyPayments: number;
+  loanRepayments: number;
+  total: number;
+}
+
+/** POST /payment-submissions/{id}/approve (body optional) */
+export interface ApproveSubmissionRequest {
+  note?: string;
+}
+
+/** POST /payment-submissions/{id}/reject */
+export interface RejectSubmissionRequest {
+  reason: string;
+}
+
+export interface SubmissionView {
+  id: UUID;
+  memberUserId: UUID;
+  memberName: string | null;
+  memberNumber: number | null;
+  kind: SubmissionKind;
+  targetId: UUID | null;
+  /** E.g. the penalty's description or "Loan: School fees"; null for a contribution. */
+  targetDescription: string | null;
+  amountMinor: Minor;
+  currency: string;
+  method: PaymentMethod;
+  reference: string | null;
+  paidOn: ISODate;
+  notes: string | null;
+  status: SubmissionStatus;
+  submittedAt: ISOInstant;
+  reviewedBy: UUID | null;
+  reviewerName: string | null;
+  reviewedAt: ISOInstant | null;
+  /** The approver's note, or the rejection reason. */
+  reviewNote: string | null;
+  cancelledAt: ISOInstant | null;
 }
 
 export interface LoanListParams extends PageParams {
@@ -1457,10 +1579,26 @@ export interface MemberAccountListParams {
 // Sections are null when the chama's licence does not include the feature.
 // =====================================================================================================
 
+/** Headline numbers; a figure is null when the licence lacks its feature. */
+export interface KeyFigures {
+  /** Every contribution recorded through the system (not reversed). */
+  totalContributionsMinor: Minor | null;
+  contributionsYearToDateMinor: Minor | null;
+  totalSavingsMinor: Minor | null;
+  cashMinor: Minor;
+  loansOutstandingMinor: Minor | null;
+  investmentsMarketValueMinor: Minor | null;
+  penaltiesOutstandingMinor: Minor | null;
+  totalAssetsMinor: Minor;
+  /** Assets less liabilities (member savings are a liability). Can be negative. */
+  netWorthMinor: Minor;
+}
 export interface MembersSection {
   active: number;
   suspended: number;
   pendingApplications: number;
+  joinedThisMonth: number;
+  joinedThisYear: number;
 }
 export interface CashSection {
   cashOnHandMinor: Minor;
@@ -1489,6 +1627,13 @@ export interface ContributionsSection {
   membersLate: number;
   arrearsMinor: Minor;
   membersInArrears: number;
+  /** Every recorded contribution, ever. */
+  totalCollectedMinor: Minor;
+  collectedThisMonthMinor: Minor;
+  collectedYearToDateMinor: Minor;
+  paymentsThisMonth: number;
+  /** Share of (member, period) dues so far that are fully paid; 10,000 when nothing is due yet. */
+  complianceRateBasisPoints: BasisPoints;
 }
 export interface LoansSection {
   activeLoans: number;
@@ -1499,12 +1644,119 @@ export interface LoansSection {
   par30BasisPoints: BasisPoints;
   awaitingApproval: number;
   awaitingDisbursement: number;
+  aging: BucketTotal[];
+  disbursedYearToDate: number;
+  disbursedYearToDateMinor: Minor;
+  /** Principal of every loan ever paid out (active and repaid). */
+  totalDisbursedMinor: Minor;
+  totalRepaidMinor: Minor;
+  repaidLoans: number;
+  /** Flat interest on active loans. */
+  interestExpectedMinor: Minor;
+  dueNext7Days: number;
+  dueNext7DaysMinor: Minor;
+}
+export interface MemberAmount {
+  memberUserId: UUID;
+  name: string | null;
+  memberNumber: number | null;
+  amountMinor: Minor;
+  count: number;
+}
+export interface PenaltiesSection {
+  outstandingMinor: Minor;
+  outstandingCount: number;
+  membersOwing: number;
+  assessedYearToDateMinor: Minor;
+  lateContributionYearToDateMinor: Minor;
+  finesYearToDateMinor: Minor;
+  collectedYearToDateMinor: Minor;
+  waivedYearToDateMinor: Minor;
+  /** Members owing the most, most first. */
+  topOwing: MemberAmount[];
 }
 export interface InvestmentsSection {
   active: number;
   investedMinor: Minor;
   marketValueMinor: Minor;
   incomeMinor: Minor;
+  bookValueMinor: Minor;
+  unrealisedGainMinor: Minor;
+  /** Profit across active and closed investments; negative for a loss. */
+  totalReturnMinor: Minor;
+  /** That profit per 10,000 invested. */
+  returnBasisPoints: BasisPoints;
+  profitable: number;
+  closed: number;
+  maturingIn30Days: number;
+}
+/**
+ * A funded investment ranked by return (Java: DashboardViews.InvestmentPerformance; renamed here
+ * because InvestmentPerformance is the detail page's performance block).
+ */
+export interface RankedInvestment {
+  rank: number;
+  investmentId: UUID;
+  name: string;
+  type: InvestmentType;
+  institution: string | null;
+  status: 'ACTIVE' | 'CLOSED';
+  investedMinor: Minor;
+  marketValueMinor: Minor;
+  incomeMinor: Minor;
+  expensesMinor: Minor;
+  /** Income less expenses, plus the gain in value. */
+  totalReturnMinor: Minor;
+  returnBasisPoints: BasisPoints;
+  /** Null when held under 30 days. */
+  annualisedReturnBasisPoints: BasisPoints | null;
+  daysHeld: number;
+  profitable: boolean;
+  fundedOn: ISODate | null;
+  maturityDate: ISODate | null;
+}
+/** Ranked by contributions in the window, then compliance, then member number. */
+export interface TopMember {
+  rank: number;
+  memberUserId: UUID;
+  name: string;
+  memberNumber: number | null;
+  /** Paid in the window. */
+  contributedMinor: Minor;
+  payments: number;
+  /** As of today, whatever the window. */
+  complianceRateBasisPoints: BasisPoints;
+  arrearsMinor: Minor;
+  latePeriods: number;
+  savingsMinor: Minor;
+}
+export interface TopMembersView {
+  from: ISODate;
+  to: ISODate;
+  currency: string;
+  members: TopMember[];
+}
+export interface TopInvestmentsView {
+  currency: string;
+  investments: RankedInvestment[];
+}
+export interface MonthTrend {
+  /** "YYYY-MM". */
+  month: string;
+  /** Null without CONTRIBUTIONS. */
+  contributionsMinor: Minor | null;
+  contributionPayments: number | null;
+  /** Null without LOANS. */
+  loansDisbursedMinor: Minor | null;
+  incomeMinor: Minor;
+  expensesMinor: Minor;
+  /** Negative = deficit. */
+  surplusMinor: Minor;
+}
+export interface TrendsView {
+  currency: string;
+  /** Oldest first. */
+  months: MonthTrend[];
 }
 export interface PerformanceSection {
   from: ISODate;
@@ -1522,6 +1774,11 @@ export interface PendingSection {
   expensesAwaitingApproval: number | null;
   expensesAwaitingPayment: number | null;
   investmentsAwaitingApproval: number | null;
+  /** Payments members reported, waiting for the treasurer. */
+  paymentsAwaitingReview: number;
+  contributionsAwaitingReview: number;
+  penaltyPaymentsAwaitingReview: number;
+  loanRepaymentsAwaitingReview: number;
 }
 export interface EntrySummary {
   id: UUID;
@@ -1534,22 +1791,60 @@ export interface EntrySummary {
   reversal: boolean;
 }
 
+/** GET /dashboard. See DASHBOARDS.md. */
 export interface ChamaDashboardView {
   chamaName: string;
   asOf: ISODate;
   currency: string;
   features: LicenseFeature[];
+  keyFigures: KeyFigures;
   members: MembersSection;
   cash: CashSection;
   savings: SavingsSection | null;
   contributions: ContributionsSection | null;
   loans: LoansSection | null;
+  /** Legacy; same as penalties.outstandingMinor. */
   penaltiesOutstandingMinor: Minor | null;
+  penalties: PenaltiesSection | null;
   investments: InvestmentsSection | null;
+  /** Up to 5; null without CONTRIBUTIONS. */
+  topMembers: TopMember[] | null;
+  /** Up to 5; null without INVESTMENTS. */
+  topInvestments: RankedInvestment[] | null;
   thisMonth: PerformanceSection;
   yearToDate: PerformanceSection;
+  /** Last 6 months, oldest first. */
+  trends: MonthTrend[];
   pending: PendingSection;
   recentEntries: EntrySummary[];
+  generatedAt: ISOInstant;
+}
+
+/**
+ * GET /dashboard/overview: the chama-wide totals for every member (CHAMA_VIEW). Same sections as
+ * ChamaDashboardView, minus anything that names a member or is an official's work.
+ */
+export interface ChamaOverviewView {
+  chamaName: string;
+  asOf: ISODate;
+  currency: string;
+  features: LicenseFeature[];
+  /** investmentsMarketValueMinor is null without INVESTMENT_VIEW. */
+  keyFigures: KeyFigures;
+  members: MembersSection;
+  cash: CashSection;
+  savings: SavingsSection | null;
+  contributions: ContributionsSection | null;
+  loans: LoansSection | null;
+  /** topOwing is always empty here. */
+  penalties: PenaltiesSection | null;
+  /** Null without INVESTMENTS or without INVESTMENT_VIEW. */
+  investments: InvestmentsSection | null;
+  topInvestments: RankedInvestment[] | null;
+  thisMonth: PerformanceSection;
+  yearToDate: PerformanceSection;
+  /** Last 6 months, oldest first. */
+  trends: MonthTrend[];
   generatedAt: ISOInstant;
 }
 
@@ -1572,6 +1867,32 @@ export interface MyContributionsSection {
   latePeriods: number;
   currentPeriod: string | null;
   currentPeriodStatus: PeriodPaymentStatus | null;
+  contributedYearToDateMinor: Minor;
+  complianceRateBasisPoints: BasisPoints;
+  /** Rank among seated members by contributions this year; null when nothing paid this year. */
+  rank: number | null;
+  rankOutOf: number;
+}
+export interface MyLoan {
+  loanId: UUID;
+  productName: string;
+  status: LoanStatus;
+  purpose: string | null;
+  principalMinor: Minor;
+  interestMinor: Minor;
+  totalDueMinor: Minor;
+  repaidMinor: Minor;
+  outstandingMinor: Minor;
+  arrearsMinor: Minor;
+  daysInArrears: number;
+  /** Repaid per 10,000 of the total due. */
+  repaidBasisPoints: BasisPoints;
+  termMonths: number;
+  appliedOn: ISODate | null;
+  disbursedOn: ISODate | null;
+  maturityDate: ISODate | null;
+  nextDueDate: ISODate | null;
+  nextDueMinor: Minor;
 }
 export interface MyLoansSection {
   activeLoans: number;
@@ -1582,8 +1903,29 @@ export interface MyLoansSection {
   nextDueMinor: Minor;
   /** Guarantee requests waiting for this member's answer. */
   guaranteeRequests: number;
+  totalBorrowedMinor: Minor;
+  totalRepaidMinor: Minor;
+  /** Not rejected or cancelled ones. */
+  loans: MyLoan[];
+}
+export interface MyPenalty {
+  penaltyId: UUID;
+  kind: PenaltyKind;
+  description: string;
+  assessedOn: ISODate;
+  amountMinor: Minor;
+  outstandingMinor: Minor;
+}
+export interface MyPenaltiesSection {
+  outstandingMinor: Minor;
+  outstandingCount: number;
+  paidMinor: Minor;
+  waivedMinor: Minor;
+  /** Oldest first. */
+  outstanding: MyPenalty[];
 }
 
+/** GET /dashboard/me. See DASHBOARDS.md. */
 export interface MemberDashboardView {
   chamaName: string;
   memberUserId: UUID;
@@ -1591,10 +1933,18 @@ export interface MemberDashboardView {
   memberNumber: number | null;
   currency: string;
   features: LicenseFeature[];
+  /** Savings less loans and penalties owed. */
+  netPositionMinor: Minor;
   savings: MySavingsSection | null;
   contributions: MyContributionsSection | null;
   loans: MyLoansSection | null;
+  /** Legacy; same as penalties.outstandingMinor. */
   penaltiesOutstandingMinor: Minor | null;
+  penalties: MyPenaltiesSection | null;
+  /** Payments the member reported that wait for review. */
+  submissions: { pending: number };
+  /** Up to 3; null without INVESTMENTS or INVESTMENT_VIEW. */
+  topInvestments: RankedInvestment[] | null;
   generatedAt: ISOInstant;
 }
 
@@ -1864,7 +2214,8 @@ export interface AuditLogParams extends PageParams {
 export const KNOWN_AUDIT_ACTIONS = [
   'CHAMA_CREATED', 'CHAMA_SETTINGS_CHANGED', 'LICENSE_ISSUED', 'LICENSE_UPDATED',
   'MEMBER_APPLIED', 'MEMBER_INVITED', 'MEMBER_APPROVED', 'MEMBER_REJECTED', 'MEMBER_SUSPENDED', 'MEMBER_REACTIVATED',
-  'MEMBER_ROLES_CHANGED', 'MEMBER_FOUNDER_ENROLLED', 'MEMBER_IMPORTED', 'ROLE_PERMISSIONS_CHANGED',
+  'MEMBER_ROLES_CHANGED', 'MEMBER_FOUNDER_ENROLLED', 'MEMBER_IMPORTED', 'MEMBER_ADDED', 'MEMBER_KYC_RECORDED',
+  'MEMBER_KYC_UPDATED', 'ROLE_PERMISSIONS_CHANGED',
   'CONTRIBUTION_RECORDED', 'CONTRIBUTION_REVERSED',
   'PENALTY_ASSESSED', 'PENALTY_FINED', 'PENALTY_PAID', 'PENALTY_WAIVED', 'PENALTY_IMPORTED',
   'LOAN_APPLIED', 'LOAN_GUARANTOR_ADDED', 'LOAN_GUARANTEE_ACCEPTED', 'LOAN_APPROVAL_GIVEN', 'LOAN_APPROVED',
@@ -1950,7 +2301,7 @@ export type ErrorCode =
   | 'AUTH_INVALID_ACCESS_TOKEN' | 'AUTH_INVALID_TOKEN' | 'AUTH_INVALID_CREDENTIALS' | 'AUTH_ACCOUNT_LOCKED'
   | 'AUTH_ACCOUNT_DISABLED' | 'AUTH_EMAIL_NOT_VERIFIED' | 'AUTH_LINK_INVALID' | 'AUTH_CURRENT_PASSWORD_INCORRECT'
   | 'AUTH_USER_ALREADY_EXISTS' | 'AUTH_USER_NOT_FOUND' | 'AUTH_WEAK_PASSWORD' | 'AUTH_PASSWORD_TOO_LONG'
-  | 'AUTH_INVALID_EMAIL' | 'AUTH_INVALID_FIRSTNAME' | 'AUTH_INVALID_LASTNAME'
+  | 'AUTH_INVALID_EMAIL' | 'AUTH_INVALID_FIRSTNAME' | 'AUTH_INVALID_LASTNAME' | 'AUTH_PASSWORD_CHANGE_REQUIRED'
   // chama & licence
   | 'CHAMA_NOT_FOUND' | 'CHAMA_INVALID_SETTINGS' | 'CHAMA_CODE_TAKEN' | 'CHAMA_INVALID_CODE' | 'CHAMA_INVALID_NAME'
   | 'CHAMA_INVALID_DESCRIPTION' | 'LICENSE_EXPIRED' | 'LICENSE_SUSPENDED' | 'LICENSE_FEATURE_NOT_INCLUDED'
@@ -1958,7 +2309,8 @@ export type ErrorCode =
   | 'LICENSE_INVALID_PERIOD'
   // members
   | 'MEMBER_NOT_FOUND' | 'MEMBER_ALREADY_EXISTS' | 'MEMBER_SELF_MANAGEMENT' | 'MEMBER_LAST_CHAIRPERSON'
-  | 'MEMBER_INVALID_STATE' | 'ROLE_PERMISSIONS_LOCKOUT'
+  | 'MEMBER_INVALID_STATE' | 'ROLE_PERMISSIONS_LOCKOUT' | 'MEMBER_ID_NUMBER_TAKEN' | 'MEMBER_INVALID_ID_NUMBER'
+  | 'MEMBER_INVALID_DATE_OF_BIRTH' | 'MEMBER_UNDER_AGE' | 'MEMBER_INVALID_COUNTY'
   // contributions
   | 'CONTRIBUTION_INVALID_PAYMENT' | 'CONTRIBUTION_MEMBER_NOT_FOUND' | 'CONTRIBUTION_SELF_RECORDING'
   | 'CONTRIBUTION_DUPLICATE_REFERENCE' | 'CONTRIBUTION_NOT_FOUND' | 'CONTRIBUTION_ALREADY_REVERSED'
@@ -1988,6 +2340,9 @@ export type ErrorCode =
   | 'SAVINGS_PRODUCT_INVALID' | 'SAVINGS_PRODUCT_NOT_FOUND' | 'SAVINGS_PRODUCT_CODE_TAKEN'
   | 'SAVINGS_PRODUCT_DEFAULT_RULE' | 'SAVINGS_PRODUCT_INACTIVE' | 'SAVINGS_PRODUCT_NO_LEDGER_CODE'
   | 'MEMBER_ACCOUNT_NOT_FOUND' | 'MEMBER_ACCOUNT_EXISTS' | 'MEMBER_ACCOUNT_STATE' | 'MEMBER_ACCOUNT_MEMBER_NOT_FOUND'
+  // payment submissions
+  | 'SUBMISSION_INVALID' | 'SUBMISSION_TARGET_INVALID' | 'SUBMISSION_NOT_FOUND' | 'SUBMISSION_WRONG_STATUS'
+  | 'SUBMISSION_SELF_REVIEW' | 'SUBMISSION_NOT_SUBMITTER' | 'SUBMISSION_DUPLICATE_REFERENCE'
   // reports
   | 'REPORT_INVALID_PERIOD' | 'REPORT_NOT_A_CASH_ACCOUNT' | 'REPORT_MEMBER_NOT_FOUND'
   // imports
