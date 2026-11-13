@@ -29,8 +29,8 @@ export const label = (value: string | null | undefined) => (value ? overrides[va
 
 export const PAYMENT_METHODS = ['CASH', 'BANK', 'MPESA'] as const;
 
-export const ROLES: ChamaRole[] = ['MEMBER', 'TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR'];
-export const OFFICIAL_ROLES: ChamaRole[] = ['TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR'];
+export const ROLES: ChamaRole[] = ['MEMBER', 'TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR', 'ADMIN'];
+export const OFFICIAL_ROLES: ChamaRole[] = ['TREASURER', 'SECRETARY', 'CHAIRPERSON', 'AUDITOR', 'ADMIN'];
 
 export const FEATURE_LABELS: Record<LicenseFeature, string> = {
   CONTRIBUTIONS: 'Contributions & savings',
