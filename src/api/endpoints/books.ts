@@ -1,7 +1,7 @@
 import { api } from '../client';
 import type {
   AuditLogEntry, AuditLogParams, CashBookView, ChamaDashboardView, ChamaOverviewView, ContributionReportView, CreateLedgerAccountRequest, DateRangeParams,
-  EntryView, FinancialPositionView, ImportPreviewView, ImportView, IncomeStatementView, LedgerAccountView, LedgerEntryListParams,
+  EntryView, FinancialPositionView, HistoryBatchView, HistoryImportKind, HistoryPreviewView, ImportPreviewView, ImportView, IncomeStatementView, LedgerAccountView, LedgerEntryListParams,
   LedgerStatementView, LoanPortfolioView, ManualEntryRequest, MemberBalancesView, MemberDashboardView, MemberStatementView,
   SavingsRegisterView, TopInvestmentsView, TopMembersView, TrendsView, TrialBalanceView,
 } from '../types';
@@ -72,6 +72,25 @@ export const importsApi = {
   preview: (file: File, asOf: string) => api.postForm<ImportPreviewView>('/imports/opening-balances/preview', toForm(file, asOf)),
   run: (file: File, asOf: string) => api.postForm<ImportView>('/imports/opening-balances', toForm(file, asOf)),
 };
+
+/** The chama's history, one file per step (see HistoryImportKind). Previews save nothing; the latest import can be undone. */
+export const historyImportsApi = {
+  template: (kind: HistoryImportKind) =>
+    api.download(`/imports/history/${slug(kind)}/template`, `history-${slug(kind)}-template.xlsx`),
+  preview: (kind: HistoryImportKind, file: File) =>
+    api.postForm<HistoryPreviewView>(`/imports/history/${slug(kind)}/preview`, fileForm(file)),
+  run: (kind: HistoryImportKind, file: File) => api.postForm<HistoryBatchView>(`/imports/history/${slug(kind)}`, fileForm(file)),
+  batches: () => api.get<HistoryBatchView[]>('/imports/history/batches'),
+  undo: (id: string) => api.post<HistoryBatchView>(`/imports/history/batches/${id}/undo`),
+};
+
+const slug = (kind: HistoryImportKind) => kind.toLowerCase();
+
+function fileForm(file: File): FormData {
+  const form = new FormData();
+  form.append('file', file);
+  return form;
+}
 
 function toForm(file: File, asOf: string): FormData {
   const form = new FormData();

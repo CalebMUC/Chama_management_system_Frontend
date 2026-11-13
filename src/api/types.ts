@@ -2286,6 +2286,58 @@ export interface ImportView {
 }
 
 // =====================================================================================================
+// Historical imports (/imports/history): a chama's years before the system, one file per step
+// =====================================================================================================
+
+/** The steps, in the order they are imported. URL slugs are the lower-case names. */
+export type HistoryImportKind = 'SETUP' | 'CONTRIBUTIONS' | 'LOANS' | 'PENALTIES' | 'INVESTMENTS' | 'EXPENSES' | 'RECONCILIATION';
+
+/** One total. AMOUNT carries minor units in `value` (and a formatted `text`); the others are ready to show in `text`. */
+export interface HistorySummaryLine {
+  label: string;
+  type: 'AMOUNT' | 'COUNT' | 'DATE' | 'TEXT';
+  value: number | null;
+  text: string | null;
+}
+
+/** A table to show as is: cells are already formatted. */
+export interface HistoryTableView {
+  title: string;
+  columns: string[];
+  rows: string[][];
+}
+
+export interface HistoryPreviewView {
+  kind: HistoryImportKind;
+  /** No errors (warnings do not block). */
+  importable: boolean;
+  /** Data rows read from the file. */
+  rows: number;
+  errors: number;
+  warnings: number;
+  summary: HistorySummaryLine[];
+  tables: HistoryTableView[];
+  /** At most 1,000; errors first. `errors` and `warnings` count all of them. */
+  problems: ImportProblemView[];
+}
+
+export interface HistoryBatchView {
+  id: UUID;
+  kind: HistoryImportKind;
+  fileName: string | null;
+  rowCount: number;
+  summary: HistorySummaryLine[];
+  importedBy: UUID;
+  importedByName: string | null;
+  importedAt: ISOInstant;
+  undoneBy: UUID | null;
+  undoneAt: ISOInstant | null;
+  /** Only the latest import can be undone, and only while nothing recorded since depends on it. */
+  undoable: boolean;
+  undoBlockedReason: string | null;
+}
+
+// =====================================================================================================
 // Error codes
 // =====================================================================================================
 

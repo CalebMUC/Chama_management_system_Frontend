@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity, ArrowLeftRight, BadgeCheck, BarChart3, BookOpen, Building2, CalendarRange, CircleDollarSign, ClipboardList, FileSpreadsheet,
-  FileText, Gavel, HandCoins, Handshake, Home, Inbox, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, ReceiptText, Scale, ScrollText, Send,
+  FileText, Gavel, HandCoins, Handshake, History, Home, Inbox, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, ReceiptText, Scale, ScrollText, Send,
   Settings2, ShieldCheck, TrendingUp, Upload, UserRound, Users, Wallet,
 } from 'lucide-react';
 import type { ChamaPermission, LicenseFeature } from '@/api/types';
@@ -103,6 +103,7 @@ export const navigation: NavGroup[] = [
       { label: 'Roles & permissions', href: '/settings/roles', icon: ShieldCheck, permission: 'MEMBER_VIEW' },
       { label: 'Savings products', href: '/settings/savings-products', icon: Layers, feature: 'CONTRIBUTIONS' },
       { label: 'Loan products', href: '/settings/loan-products', icon: ClipboardList, feature: 'LOANS' },
+      { label: 'Import history', href: '/settings/import-history', icon: History, permission: 'CHAMA_SETTINGS_MANAGE' },
       { label: 'Import opening balances', href: '/settings/import', icon: Upload, permission: 'CHAMA_SETTINGS_MANAGE' },
     ],
   },
