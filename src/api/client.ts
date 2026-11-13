@@ -36,6 +36,7 @@ type Handlers = {
   sessionExpired?: () => void;
   licenceBlocked?: (error: ApiError) => void;
   accessDenied?: (error: ApiError) => void;
+  passwordChangeRequired?: () => void;
   networkError?: () => void;
 };
 const handlers: Handlers = {};
@@ -53,6 +54,10 @@ export function onLicenceBlocked(fn: (error: ApiError) => void) {
 }
 export function onAccessDenied(fn: (error: ApiError) => void) {
   handlers.accessDenied = fn;
+}
+/** AUTH_PASSWORD_CHANGE_REQUIRED: the account still has the temporary password an official set. */
+export function onPasswordChangeRequired(fn: () => void) {
+  handlers.passwordChangeRequired = fn;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -144,6 +149,7 @@ http.interceptors.response.use(
     const apiError = normaliseError(error);
     if (apiError.code === 'LICENSE_EXPIRED' || apiError.code === 'LICENSE_SUSPENDED') handlers.licenceBlocked?.(apiError);
     else if (apiError.code === 'ACCESS_DENIED') handlers.accessDenied?.(apiError);
+    else if (apiError.code === 'AUTH_PASSWORD_CHANGE_REQUIRED') handlers.passwordChangeRequired?.();
     else if (apiError.code === 'NETWORK_ERROR') handlers.networkError?.();
     throw apiError;
   },

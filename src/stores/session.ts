@@ -46,9 +46,14 @@ export const useSession = create<SessionState>((set) => ({
 
 export const licenceUsable = (licence: LicenseView | null) => !licence || licence.state === 'ACTIVE';
 
+/** What routing needs from the session. `user` is optional so callers without it route as before. */
+export type RoutingState = Pick<SessionState, 'status' | 'isPlatformAdmin' | 'membership' | 'licence'> & { user?: Pick<UserResponse, 'mustChangePassword'> | null };
+
 /** Where a signed-in user belongs (README §5 start-up flow). */
-export function homePathFor(s: Pick<SessionState, 'status' | 'isPlatformAdmin' | 'membership' | 'licence'>): string {
+export function homePathFor(s: RoutingState): string {
   if (s.status !== 'authenticated') return '/login';
+  // A temporary password set by an official: the API refuses everything else until it is replaced.
+  if (s.user?.mustChangePassword) return '/change-password';
   if (s.isPlatformAdmin) return '/platform';
   const status = s.membership?.status;
   if (status === 'PENDING_APPROVAL') return '/pending';

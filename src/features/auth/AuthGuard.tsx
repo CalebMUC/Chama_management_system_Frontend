@@ -3,18 +3,19 @@
 import { useEffect, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LoadingState } from '@/components/shared/States';
-import { homePathFor, licenceUsable, useSession, type SessionState } from '@/stores/session';
+import { homePathFor, licenceUsable, useSession, type RoutingState } from '@/stores/session';
 
 /**
  * Areas:
  *  - chama:    the member/official app. ACTIVE membership and a usable licence (except /profile, reachable while blocked).
- *  - status:   /pending, /membership-status, /licence-blocked: any signed-in chama user.
+ *  - status:   /pending, /membership-status, /licence-blocked, /change-password: any signed-in chama user.
  *  - platform: platform administrators only.
  */
 export type GuardArea = 'chama' | 'status' | 'platform';
 
-export function guardRedirect(s: Pick<SessionState, 'status' | 'isPlatformAdmin' | 'membership' | 'licence'>, area: GuardArea, pathname: string): string | null {
+export function guardRedirect(s: RoutingState, area: GuardArea, pathname: string): string | null {
   const home = homePathFor(s);
+  if (s.user?.mustChangePassword) return home === pathname ? null : home;
   if (area === 'platform') return s.isPlatformAdmin ? null : home;
   if (s.isPlatformAdmin) return '/platform';
   if (area === 'status') return home === pathname || pathname === '/profile' ? null : home;
@@ -36,7 +37,8 @@ export function AuthGuard({ children, area }: { children: ReactNode; area: Guard
   const isPlatformAdmin = useSession((s) => s.isPlatformAdmin);
   const membership = useSession((s) => s.membership);
   const licence = useSession((s) => s.licence);
-  const redirect = status === 'authenticated' ? guardRedirect({ status, isPlatformAdmin, membership, licence }, area, pathname) : null;
+  const user = useSession((s) => s.user);
+  const redirect = status === 'authenticated' ? guardRedirect({ status, isPlatformAdmin, membership, licence, user }, area, pathname) : null;
 
   useEffect(() => {
     if (status === 'anonymous') router.replace(area === 'platform' ? '/admin/login' : `/login?returnTo=${encodeURIComponent(pathname)}`);

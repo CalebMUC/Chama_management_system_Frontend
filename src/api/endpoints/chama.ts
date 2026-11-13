@@ -1,7 +1,7 @@
 import { api } from '../client';
 import type {
-  ChamaPermission, ChamaResponse, ChamaRole, ChamaSettingsRequest, InvitationView, LicenseView, MemberView, MembershipStatus,
-  MyMembershipView, RolePermissionsMap,
+  AddMemberRequest, ChamaPermission, ChamaResponse, ChamaRole, ChamaSettingsRequest, InvitationView, KycRequest, LicenseView,
+  MemberKycView, MemberView, MembershipStatus, MyMembershipView, RolePermissionsMap,
 } from '../types';
 
 /** §2 My chama. */
@@ -25,7 +25,12 @@ export const membersApi = {
     }
     return out;
   },
+  /** Opens an ACTIVE member's account with a temporary password and KYC details. */
+  add: (body: AddMemberRequest) => api.post<MemberView>('/members', body),
   invite: (email: string) => api.post<InvitationView>('/members/invitations', { email }),
+  /** null when no KYC details were recorded yet. */
+  kyc: (id: string) => api.get<MemberKycView | null>(`/members/${id}/kyc`),
+  updateKyc: (id: string, body: KycRequest) => api.put<MemberKycView>(`/members/${id}/kyc`, body),
   approve: (id: string) => api.post<MemberView>(`/members/${id}/approve`),
   reject: (id: string) => api.post<MemberView>(`/members/${id}/reject`),
   suspend: (id: string, reason: string) => api.post<MemberView>(`/members/${id}/suspend`, { reason }),

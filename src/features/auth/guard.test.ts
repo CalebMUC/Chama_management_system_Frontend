@@ -41,6 +41,16 @@ describe('guardRedirect', () => {
     expect(guardRedirect({ ...base, membership: member('PENDING_APPROVAL') }, 'chama', '/home')).toBe('/pending');
     expect(guardRedirect({ ...base, membership: member('PENDING_APPROVAL') }, 'status', '/pending')).toBeNull();
   });
+
+  it('holds members with a temporary password on the change-password screen', () => {
+    const temporary = { ...base, membership: null, licence: null, user: { mustChangePassword: true } };
+    expect(homePathFor(temporary)).toBe('/change-password');
+    expect(guardRedirect(temporary, 'chama', '/home')).toBe('/change-password');
+    expect(guardRedirect(temporary, 'chama', '/profile')).toBe('/change-password');
+    expect(guardRedirect(temporary, 'status', '/pending')).toBe('/change-password');
+    expect(guardRedirect(temporary, 'status', '/change-password')).toBeNull();
+    expect(guardRedirect({ ...base, user: { mustChangePassword: false } }, 'status', '/change-password')).toBe('/home');
+  });
 });
 
 describe('safeReturnTo', () => {
