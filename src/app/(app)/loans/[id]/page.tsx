@@ -51,7 +51,7 @@ function LoanView({ detail }: { detail: LoanDetailView }) {
   const repay = useApiMutation((b: Parameters<typeof loansApi.repay>[1]) => loansApi.repay(loan.id, b), opts);
 
   const borrower = loan.borrowerUserId === me;
-  const guarantor = detail.guarantors.some((g) => g.userId === me && g.status !== 'DECLINED' && g.status !== 'WITHDRAWN');
+  const guarantor = detail.guarantors.some((g) => g.userId === me && g.status !== 'DECLINED' && g.status !== 'WITHDRAWN' && g.status !== 'RELEASED');
   const approved = detail.approvals.some((a) => a.approverUserId === me);
   const name = memberLabel(loan.borrowerName, loan.memberNumber);
   const c = loan.currency;

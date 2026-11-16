@@ -22,6 +22,7 @@ const overrides: Record<string, string> = {
   OPENING_BALANCE: 'Opening balance',
   CASH: 'Cash',
   BANK: 'Bank',
+  SAVINGS: 'From savings',
   NATIONAL_ID: 'National ID',
   ALIEN_ID: 'Alien ID',
   MEMBER_KYC_RECORDED: 'Member KYC recorded',
@@ -78,6 +79,9 @@ export const PERMISSION_GROUPS: { area: string; permissions: { key: ChamaPermiss
       { key: 'MEMBER_SUSPEND', unlocks: 'Suspend/reactivate' },
       { key: 'MEMBER_ROLES_MANAGE', unlocks: "Change a member's roles" },
       { key: 'ROLE_PERMISSIONS_MANAGE', unlocks: 'Edit role → permission mapping' },
+      { key: 'MEMBER_EXIT_REQUEST', unlocks: "Preview and start a member's exit" },
+      { key: 'MEMBER_EXIT_APPROVE', unlocks: 'Approve/reject exit settlements' },
+      { key: 'MEMBER_EXIT_SETTLE', unlocks: 'Pay out an approved exit' },
     ],
   },
   {
