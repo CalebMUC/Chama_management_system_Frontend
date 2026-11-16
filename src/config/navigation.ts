@@ -103,8 +103,8 @@ export const navigation: NavGroup[] = [
       { label: 'Roles & permissions', href: '/settings/roles', icon: ShieldCheck, permission: 'MEMBER_VIEW' },
       { label: 'Savings products', href: '/settings/savings-products', icon: Layers, feature: 'CONTRIBUTIONS' },
       { label: 'Loan products', href: '/settings/loan-products', icon: ClipboardList, feature: 'LOANS' },
-      { label: 'Import history', href: '/settings/import-history', icon: History, permission: 'CHAMA_SETTINGS_MANAGE' },
-      { label: 'Import opening balances', href: '/settings/import', icon: Upload, permission: 'CHAMA_SETTINGS_MANAGE' },
+      { label: 'Import history', href: '/settings/import-history', icon: History, permission: 'DATA_IMPORT' },
+      { label: 'Import opening balances', href: '/settings/import', icon: Upload, permission: 'DATA_IMPORT' },
     ],
   },
 ];

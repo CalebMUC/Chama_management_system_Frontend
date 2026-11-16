@@ -40,7 +40,7 @@ const STEPS: Step[] = [
 
 export default function ImportHistoryPage() {
   return (
-    <Guard permission="CHAMA_SETTINGS_MANAGE">
+    <Guard permission="DATA_IMPORT">
       <HistoryImport />
     </Guard>
   );

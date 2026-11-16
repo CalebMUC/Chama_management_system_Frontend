@@ -65,7 +65,8 @@ export const PERMISSION_GROUPS: { area: string; permissions: { key: ChamaPermiss
     area: 'Chama',
     permissions: [
       { key: 'CHAMA_VIEW', unlocks: 'Chama profile, licence' },
-      { key: 'CHAMA_SETTINGS_MANAGE', unlocks: 'Chama settings, opening-balance import' },
+      { key: 'CHAMA_SETTINGS_MANAGE', unlocks: 'Chama settings' },
+      { key: 'DATA_IMPORT', unlocks: 'Import opening balances and history from Excel' },
     ],
   },
   {
