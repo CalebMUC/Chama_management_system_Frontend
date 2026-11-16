@@ -28,7 +28,7 @@ export interface PaymentValues {
  * A money-movement dialog (README §8.2): optional amount (with a maximum), method, reference (required for Bank/M-Pesa) and
  * date (default today, max today). `dateField` is the API's name for the date (paidOn, disbursedOn…) so its errors map back.
  */
-export function PaymentDialog({ open, onOpenChange, title, description, amount, dateField, dateLabel = 'Date', methods, submitLabel, onSubmit, summary, destructive, note, preview }: {
+export function PaymentDialog({ open, onOpenChange, title, description, amount, dateField, dateLabel = 'Date', minDate, methods, submitLabel, onSubmit, summary, destructive, note, preview }: {
   open: boolean;
   onOpenChange(o: boolean): void;
   title: string;
@@ -41,6 +41,8 @@ export function PaymentDialog({ open, onOpenChange, title, description, amount, 
   preview?: (amountMinor: number | null) => ReactNode;
   dateField: string;
   dateLabel?: string;
+  /** Earliest allowed date ("YYYY-MM-DD"), e.g. not before the record was started. */
+  minDate?: { value: string; message: string };
   methods?: string[];
   submitLabel: string;
   onSubmit(values: PaymentValues): Promise<unknown>;
@@ -53,14 +55,14 @@ export function PaymentDialog({ open, onOpenChange, title, description, amount, 
     const shape = {
       ...paymentShape,
       ...(methods ? { method: z.string() } : {}),
-      [dateField]: pastDateSchema,
+      [dateField]: minDate ? pastDateSchema.refine((v) => v >= minDate.value, minDate.message) : pastDateSchema,
       amount: amount
         ? moneySchema(currency, { allowZero: amount.allowZero, max: amount.max, maxMessage: amount.max !== undefined ? `At most ${formatMoney(amount.max, currency)}` : undefined })
         : z.string().optional(),
       note: z.string().trim().max(300, 'At most 300 characters').optional(),
     };
     return z.object(shape).superRefine((v, ctx) => requireReference(v as { method: string; reference?: string }, ctx));
-  }, [currency, amount, dateField, methods]);
+  }, [currency, amount, dateField, methods, minDate]);
 
   const defaults = {
     method: 'MPESA',
@@ -118,7 +120,7 @@ export function PaymentDialog({ open, onOpenChange, title, description, amount, 
               </Field>
             )}
             {amount && preview && <PreviewLine text={form.watch('amount' as never) as unknown as string} currency={currency} preview={preview} />}
-            <PaymentFields form={form} dateField={dateField as never} dateLabel={dateLabel} methods={methods} />
+            <PaymentFields form={form} dateField={dateField as never} dateLabel={dateLabel} methods={methods} minDate={minDate?.value} />
             {note && (
               <Field label="Note" error={errors.note}>
                 <Textarea {...form.register('note' as never)} maxLength={300} rows={2} />

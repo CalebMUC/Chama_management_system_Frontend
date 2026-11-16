@@ -38,11 +38,13 @@ const icons: Partial<Record<BadgeVariant, ReactNode>> = {
   destructive: <XCircle className="size-3" aria-hidden />,
   secondary: <Ban className="size-3" aria-hidden />,
   outline: <CircleDashed className="size-3" aria-hidden />,
+  info: <CheckCircle2 className="size-3" aria-hidden />,
 };
 
-export function StatusChip({ status, text, className }: { status: string | null | undefined; text?: string; className?: string }) {
+/** `variant` overrides the colour where a status means something different (an APPROVED exit is blue: not paid out yet). */
+export function StatusChip({ status, text, className, variant: override }: { status: string | null | undefined; text?: string; className?: string; variant?: BadgeVariant }) {
   if (!status) return <span className="text-muted-foreground">—</span>;
-  const variant = statusVariant(status);
+  const variant = override ?? statusVariant(status);
   return <Badge variant={variant} className={className}>{icons[variant]}{text ?? label(status)}</Badge>;
 }
 

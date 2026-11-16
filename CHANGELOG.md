@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased — Member exits and guarantee transfers (backend b5217e6)
+
+Types and labels came in 9bf0008; this adds the screens.
+
+- Start exit (member page and members row menu, MEMBER_EXIT_REQUEST, ACTIVE or SUSPENDED members, never yourself): previews
+  the settlement (GET /member-exits/preview), lists blockers with what to do and disables submit, else takes a reason
+  (≤300) and opens the new exit. EXITED members show when they left, why, and a link to their settled exit; a member
+  with an exit in progress shows a notice linking to it.
+- Member exits (`/members/exits`, MEMBER_VIEW, under Chama › Members): status filter, payout, approvals n of m, CSV.
+- Exit detail (`/members/exits/{id}`): settlement statement, details, approval trail. Approve (note), Reject (reason),
+  Cancel (requester only), Pay out (APPROVED only; method/reference/date not before the exit started, or a plain confirm
+  when nothing is paid out). Self-handling, requester and already-approved rules show as disabled buttons with the reason.
+  Payout errors (settlement changed, insufficient funds, duplicate reference, blocked, last chairperson) are explained.
+- Shared `SettlementStatement`: lines by kind, refundable − loans − penalties = payout, kept by the chama shown apart,
+  "Dividend: none for the year of exit", shortfall in red. Exit status colours: pending amber, approved blue, settled
+  green, rejected red, cancelled grey (`StatusChip` takes a `variant` override).
+- My exit: a read-only card on the member home (GET /member-exits/mine) while an exit is in progress or settled.
+- Transfer a guarantee (POST /loans/{loanId}/guarantors/{guarantorUserId}/replace): on the loan page's guarantor list and
+  My loans (borrower, the guarantor, or LOAN_APPROVE), and on Guarantee requests for your own accepted guarantees. The
+  guarantor list shows "Taking over from … — awaiting acceptance", "Took over from …" and who has been asked to take over.
+  Guarantee requests now offer Accept/Decline on takeover requests for loans past PENDING_GUARANTORS.
+- `PaymentDialog` takes an optional `minDate`.
+
 ## Unreleased — Member self-service (backend 0524f80)
 
 API change: `src/api/types.ts` re-synced (PAYMENT_SUBMIT, submissions, ChamaOverviewView, GuarantorCandidate, SUBMISSION_* codes).

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/overlays';
 import { Badge } from '@/components/ui/primitives';
 import { StandingSummary } from '@/features/contributions/StandingSummary';
+import { MemberExitNotice } from '@/features/exits/MemberExitNotice';
 import { paymentColumns } from '@/features/contributions/paymentColumns';
 import { LoanMobileCard, loanColumns } from '@/features/loans/loanColumns';
 import { KycPanel } from '@/features/members/KycPanel';
@@ -87,6 +88,7 @@ function MemberDetail() {
         }
       />
       <MemberSummary m={m} />
+      <MemberExitNotice member={m} />
       <Panel title="Member details">
         <div className="space-y-4">
           <DetailList
@@ -97,6 +99,8 @@ function MemberDetail() {
               { label: 'Roles', value: <span className="flex flex-wrap gap-1">{m.roles.map((r) => <Badge key={r} variant="outline">{label(r)}</Badge>)}</span> },
               { label: m.joinedAt ? 'Joined' : 'Applied', value: formatInstantDate(m.joinedAt ?? m.appliedAt) },
               m.suspensionReason ? { label: 'Suspension reason', value: m.suspensionReason } : null,
+              m.exitedAt ? { label: 'Left', value: formatInstantDate(m.exitedAt) } : null,
+              m.exitReason ? { label: 'Exit reason', value: m.exitReason } : null,
             ]}
           />
           <MemberActions member={m} inline />
