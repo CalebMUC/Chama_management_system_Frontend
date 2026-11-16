@@ -64,7 +64,7 @@ function LoanCard({ detail, defaultOpen }: { detail: LoanDetailView; defaultOpen
   const [guarantor, setGuarantor] = useState<string | null>(null);
   const cancel = useApiMutation(() => loansApi.cancel(loan.id), { invalidate: LOAN_INVALIDATE, toastErrors: false });
   const add = useApiMutation((userId: string) => loansApi.addGuarantor(loan.id, userId), { invalidate: LOAN_INVALIDATE, toastErrors: false });
-  const existing = detail.guarantors.filter((g) => g.status !== 'WITHDRAWN' && g.status !== 'DECLINED').map((g) => g.userId);
+  const existing = detail.guarantors.filter((g) => g.status !== 'WITHDRAWN' && g.status !== 'DECLINED' && g.status !== 'RELEASED').map((g) => g.userId);
 
   return (
     <Card>

@@ -22,7 +22,7 @@ export function MoneyText({ value, currency, className, signed }: { value: numbe
 const GREEN = ['ACTIVE', 'PAID', 'APPROVED', 'RECORDED', 'REPAID', 'ACCEPTED'];
 const AMBER = ['PENDING', 'PROPOSED', 'PARTIALLY_PAID', 'PARTLY_PAID', 'DUE', 'OUTSTANDING', 'REQUESTED'];
 const RED = ['OVERDUE', 'UNPAID', 'REJECTED', 'SUSPENDED', 'EXPIRED', 'DECLINED'];
-const GREY = ['CANCELLED', 'REVERSED', 'WAIVED', 'CLOSED', 'WITHDRAWN', 'EXITED', 'ARCHIVED'];
+const GREY = ['CANCELLED', 'REVERSED', 'WAIVED', 'CLOSED', 'WITHDRAWN', 'RELEASED', 'EXITED', 'ARCHIVED'];
 
 export function statusVariant(status: string): BadgeVariant {
   if (GREEN.includes(status)) return 'success';
