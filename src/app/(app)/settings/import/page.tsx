@@ -22,7 +22,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 export default function ImportPage() {
   return (
-    <Guard permission="CHAMA_SETTINGS_MANAGE">
+    <Guard permission="DATA_IMPORT">
       <ImportWizard />
     </Guard>
   );
