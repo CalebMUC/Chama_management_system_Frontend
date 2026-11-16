@@ -83,7 +83,7 @@ function LoanCard({ detail, defaultOpen }: { detail: LoanDetailView; defaultOpen
         {open && (
           <div className="space-y-5 border-t pt-4">
             <LoanFigures loan={loan} />
-            <LoanDetailBody detail={detail} />
+            <LoanDetailBody detail={detail} transfer={{ me, canApprove: false }} />
             {loan.borrowerUserId === me && (
               <div className="flex flex-wrap gap-2 border-t pt-4">
                 {loan.status === 'ACTIVE' && (

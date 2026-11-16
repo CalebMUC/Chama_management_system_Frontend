@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/shared/Display';
 import { ErrorState, NotFoundState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/primitives';
+import { MyExitCard } from '@/features/exits/MyExitCard';
 import { MyContributionsCard, MyLoansCard, MyPenaltiesCard, NetPositionHero, OurInvestments, PendingReports } from '@/features/home/MemberCards';
 import { AccountTiles, MiniStatement, QuickActions } from '@/features/home/MemberHome';
 import { REPORT_PAYMENT_PATH } from '@/features/submissions/submissionLinks';
@@ -70,6 +71,7 @@ export default function HomePage() {
           </>
         }
       />
+      <MyExitCard />
       <NetPositionHero d={d} />
       <PendingReports d={d} />
       <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">

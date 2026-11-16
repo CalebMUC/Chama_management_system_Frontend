@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, X } from 'lucide-react';
+import { ArrowLeftRight, Check, X } from 'lucide-react';
 import { loansApi } from '@/api/endpoints/loans';
 import type { GuaranteeView } from '@/api/types';
 import { Guard } from '@/components/shared/Can';
@@ -11,8 +11,12 @@ import { DetailList, MoneyText, PageHeader, StatusChip } from '@/components/shar
 import { EmptyState, ErrorState, LoadingState } from '@/components/shared/States';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/primitives';
+import { isLoanOpen } from '@/features/loans/guaranteeTransfer';
+import { TransferGuaranteeDialog } from '@/features/loans/TransferGuaranteeDialog';
 import { useApiMutation } from '@/hooks/useApiMutation';
+import { useMyUserId } from '@/hooks/useSessionInfo';
 import { formatDate, memberLabel } from '@/lib/format';
+import { keys } from '@/lib/invalidation';
 
 export default function GuaranteesPage() {
   return (
@@ -25,8 +29,10 @@ export default function GuaranteesPage() {
 /** README §7.9: loans other members asked this member to guarantee. */
 function Guarantees() {
   const q = useQuery({ queryKey: ['loans', 'guarantees'], queryFn: loansApi.guarantees });
+  const me = useMyUserId();
   const [answer, setAnswer] = useState<{ g: GuaranteeView; accept: boolean } | null>(null);
-  const respond = useApiMutation((v: { id: string; accept: boolean }) => loansApi.respondGuarantee(v.id, v.accept), { invalidate: ['loans', 'dashboard'], toastErrors: false });
+  const [moving, setMoving] = useState<GuaranteeView | null>(null);
+  const respond = useApiMutation((v: { id: string; accept: boolean }) => loansApi.respondGuarantee(v.id, v.accept), { invalidate: keys('guaranteeTransfer'), toastErrors: false });
   const sorted = [...(q.data ?? [])].sort((a, b) => Number(b.myStatus === 'REQUESTED') - Number(a.myStatus === 'REQUESTED'));
 
   return (
@@ -58,10 +64,22 @@ function Guarantees() {
                       { label: 'Purpose', value: l.purpose },
                     ]}
                   />
-                  {g.myStatus === 'REQUESTED' && l.status === 'PENDING_GUARANTORS' && (
-                    <div className="flex flex-wrap gap-2 border-t pt-4">
-                      <Button variant="success" onClick={() => setAnswer({ g, accept: true })}><Check />Accept</Button>
-                      <Button variant="outline" onClick={() => setAnswer({ g, accept: false })}><X />Decline</Button>
+                  {g.myStatus === 'REQUESTED' && isLoanOpen(l.status) && (
+                    <div className="space-y-3 border-t pt-4">
+                      {/* Past PENDING_GUARANTORS, an open request can only be to take over another member's guarantee. */}
+                      {l.status !== 'PENDING_GUARANTORS' && (
+                        <p className="text-sm text-muted-foreground">You&apos;ve been asked to take over another member&apos;s guarantee of this loan. If you accept, they are released and you become the guarantor.</p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="success" onClick={() => setAnswer({ g, accept: true })}><Check />Accept</Button>
+                        <Button variant="outline" onClick={() => setAnswer({ g, accept: false })}><X />Decline</Button>
+                      </div>
+                    </div>
+                  )}
+                  {g.myStatus === 'ACCEPTED' && isLoanOpen(l.status) && (
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
+                      <p className="text-sm text-muted-foreground">Leaving the chama, or can&apos;t stand surety any more? Ask another member to take over.</p>
+                      <Button variant="outline" onClick={() => setMoving(g)}><ArrowLeftRight />Transfer guarantee</Button>
                     </div>
                   )}
                 </CardContent>
@@ -83,6 +101,19 @@ function Guarantees() {
         destructive={answer ? !answer.accept : false}
         onConfirm={() => answer && respond.mutateAsync({ id: answer.g.loan.id, accept: answer.accept })}
       />
+      {moving && me && (
+        <TransferGuaranteeDialog
+          open={!!moving}
+          onOpenChange={(o) => !o && setMoving(null)}
+          loanId={moving.loan.id}
+          guarantorUserId={me}
+          guarantorName="you"
+          borrowerName={memberLabel(moving.loan.borrowerName, moving.loan.memberNumber)}
+          // This view doesn't list the other guarantors; the server refuses one who already guarantees (LOAN_INVALID).
+          exclude={[moving.loan.borrowerUserId]}
+          mine
+        />
+      )}
     </div>
   );
 }

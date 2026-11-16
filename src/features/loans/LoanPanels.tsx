@@ -1,15 +1,21 @@
 'use client';
 
-import type { LoanDetailView, LoanView } from '@/api/types';
+import { useState } from 'react';
+import { ArrowLeftRight } from 'lucide-react';
+import type { GuarantorView, LoanDetailView, LoanView } from '@/api/types';
 import { ApprovalProgress } from '@/components/shared/ApprovalProgress';
 import { DetailList, EntryLink, MoneyText, Progress, StatusChip } from '@/components/shared/Display';
 import { DetailTabs } from '@/components/shared/DetailTabs';
 import { Identifier } from '@/components/shared/Identifier';
 import { KpiStrip, KpiTile } from '@/components/shared/Kpi';
 import { EmptyState } from '@/components/shared/States';
+import { Button } from '@/components/ui/button';
 import { Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/primitives';
 import { dueIn, formatBp, formatDate, formatInstant, memberLabel } from '@/lib/format';
 import { label } from '@/lib/labels';
+import { cn } from '@/lib/utils';
+import { canTransferGuarantee, transferExclusions, transferNote } from './guaranteeTransfer';
+import { TransferGuaranteeDialog } from './TransferGuaranteeDialog';
 
 export const LOAN_STATUSES = ['PENDING_GUARANTORS', 'PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID', 'REJECTED', 'CANCELLED'] as const;
 /** Borrowers can cancel any time before disbursement. */
@@ -54,8 +60,16 @@ export function LoanFigures({ loan, showBorrower }: { loan: LoanView; showBorrow
   );
 }
 
-export function GuarantorList({ detail }: { detail: LoanDetailView }) {
+/** Who is looking, so the list can offer guarantee transfers to the borrower, the guarantor or a LOAN_APPROVE official. */
+export interface TransferViewer {
+  me: string | null;
+  canApprove: boolean;
+}
+
+export function GuarantorList({ detail, transfer }: { detail: LoanDetailView; transfer?: TransferViewer }) {
   const { loan, guarantors } = detail;
+  const [moving, setMoving] = useState<GuarantorView | null>(null);
+  const nameOf = (g: GuarantorView) => memberLabel(g.name, g.memberNumber);
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">
@@ -63,16 +77,36 @@ export function GuarantorList({ detail }: { detail: LoanDetailView }) {
       </p>
       {guarantors.length === 0 ? <p className="text-sm text-muted-foreground">{loan.requiredGuarantors === 0 ? 'Not needed for this amount.' : 'None yet.'}</p> : (
         <ul className="divide-y rounded-md border">
-          {guarantors.map((g) => (
-            <li key={g.userId} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-              <span>
-                {memberLabel(g.name, g.memberNumber)}
-                <span className="block text-xs text-muted-foreground">Asked {formatInstant(g.requestedAt)}{g.respondedAt && ` · answered ${formatInstant(g.respondedAt)}`}</span>
-              </span>
-              <StatusChip status={g.status} />
-            </li>
-          ))}
+          {guarantors.map((g) => {
+            const note = transferNote(g, guarantors, nameOf);
+            const canMove = !!transfer && canTransferGuarantee(detail, g, transfer.me, transfer.canApprove);
+            return (
+              <li key={g.userId} className={cn('flex items-center justify-between gap-2 px-3 py-2 text-sm', g.status === 'RELEASED' && 'text-muted-foreground')}>
+                <span className="min-w-0">
+                  {nameOf(g)}
+                  {note && <span className="block text-xs font-medium text-warning-text">{note}</span>}
+                  <span className="block text-xs text-muted-foreground">Asked {formatInstant(g.requestedAt)}{g.respondedAt && ` · answered ${formatInstant(g.respondedAt)}`}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {canMove && <Button size="sm" variant="outline" onClick={() => setMoving(g)}><ArrowLeftRight />Transfer</Button>}
+                  <StatusChip status={g.status} />
+                </span>
+              </li>
+            );
+          })}
         </ul>
+      )}
+      {transfer && moving && (
+        <TransferGuaranteeDialog
+          open={!!moving}
+          onOpenChange={(o) => !o && setMoving(null)}
+          loanId={loan.id}
+          guarantorUserId={moving.userId}
+          guarantorName={nameOf(moving)}
+          borrowerName={memberLabel(loan.borrowerName, loan.memberNumber)}
+          exclude={transferExclusions(detail)}
+          mine={moving.userId === transfer.me}
+        />
       )}
     </div>
   );
@@ -149,13 +183,13 @@ export function RepaymentsTable({ detail, linkEntries }: { detail: LoanDetailVie
 }
 
 /** Guarantors, approvals, schedule and repayments in one block. */
-export function LoanDetailBody({ detail, linkEntries }: { detail: LoanDetailView; linkEntries?: boolean }) {
+export function LoanDetailBody({ detail, linkEntries, transfer }: { detail: LoanDetailView; linkEntries?: boolean; transfer?: TransferViewer }) {
   const { loan } = detail;
   const showApprovals = ['PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID'].includes(loan.status) || detail.approvals.length > 0;
   return (
     <div className="space-y-5">
       <div className="grid gap-5 md:grid-cols-2">
-        <GuarantorList detail={detail} />
+        <GuarantorList detail={detail} transfer={transfer} />
         {showApprovals && <ApprovalProgress approvals={detail.approvals} required={loan.requiredApprovals} />}
       </div>
       {detail.decision && (detail.decision.reason || detail.decision.cancelledAt) && (
@@ -214,7 +248,7 @@ export function LoanSummaryStrip({ loan }: { loan: LoanView }) {
 }
 
 /** Details, Schedule, Repayments and Approvals as tabs (the officials' loan page). */
-export function LoanTabs({ detail, linkEntries }: { detail: LoanDetailView; linkEntries?: boolean }) {
+export function LoanTabs({ detail, linkEntries, transfer }: { detail: LoanDetailView; linkEntries?: boolean; transfer?: TransferViewer }) {
   const { loan } = detail;
   const showApprovals = ['PENDING_APPROVAL', 'APPROVED', 'ACTIVE', 'REPAID'].includes(loan.status) || detail.approvals.length > 0;
   return (
@@ -250,7 +284,7 @@ export function LoanTabs({ detail, linkEntries }: { detail: LoanDetailView; link
           count: detail.approvals.length,
           content: (
             <div className="grid gap-5 md:grid-cols-2">
-              <GuarantorList detail={detail} />
+              <GuarantorList detail={detail} transfer={transfer} />
               {showApprovals ? <ApprovalProgress approvals={detail.approvals} required={loan.requiredApprovals} /> : <p className="text-sm text-muted-foreground">Approvals start once guarantors accept.</p>}
             </div>
           ),

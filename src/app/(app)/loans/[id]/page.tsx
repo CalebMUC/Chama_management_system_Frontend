@@ -91,7 +91,7 @@ function LoanView({ detail }: { detail: LoanDetailView }) {
         }
       />
       <LoanSummaryStrip loan={loan} />
-      <LoanTabs detail={detail} linkEntries={can('LEDGER_VIEW')} />
+      <LoanTabs detail={detail} linkEntries={can('LEDGER_VIEW')} transfer={{ me, canApprove: can('LOAN_APPROVE') }} />
 
       <ReasonDialog
         open={dialog === 'approve'}

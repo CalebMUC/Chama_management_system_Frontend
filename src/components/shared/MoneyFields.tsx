@@ -32,12 +32,14 @@ export const PastDateInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HT
  * "How was the money paid" (README §8.2): Method, Reference (required for Bank and M-Pesa, labelled by method), Date (default
  * today, max today). Field names: method, reference, and `dateField`.
  */
-export function PaymentFields<T extends FieldValues>({ form, dateField, dateLabel = 'Date', methods = ['CASH', 'BANK', 'MPESA'], hideDate }: {
+export function PaymentFields<T extends FieldValues>({ form, dateField, dateLabel = 'Date', methods = ['CASH', 'BANK', 'MPESA'], hideDate, minDate }: {
   form: UseFormReturn<T, any, any>;
   dateField?: Path<T>;
   dateLabel?: string;
   methods?: string[];
   hideDate?: boolean;
+  /** Earliest date the picker offers ("YYYY-MM-DD"). */
+  minDate?: string;
 }) {
   const method = form.watch('method' as Path<T>) as string;
   const errors = form.formState.errors as Record<string, { message?: string } | undefined>;
@@ -60,7 +62,7 @@ export function PaymentFields<T extends FieldValues>({ form, dateField, dateLabe
       </Field>
       {!hideDate && dateField && (
         <Field label={dateLabel} required error={errors[dateField as string]}>
-          <PastDateInput {...form.register(dateField)} />
+          <PastDateInput min={minDate} {...form.register(dateField)} />
         </Field>
       )}
     </div>

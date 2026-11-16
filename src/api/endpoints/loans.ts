@@ -1,7 +1,7 @@
 import { api } from '../client';
 import type {
   ApplyLoanRequest, DisburseRequest, EligibilityView, GuarantorCandidate, GuaranteeView, LoanDetailView, LoanListParams, LoanProductRequest,
-  LoanProductView, LoanView, MyLoansView, RepaymentRequest,
+  LoanProductView, LoanView, MyLoansView, ReplaceGuarantorRequest, RepaymentRequest,
 } from '../types';
 
 /** §8 Loan products (feature LOANS). */
@@ -25,6 +25,12 @@ export const loansApi = {
   guarantees: () => api.get<GuaranteeView[]>('/loans/guarantees'),
   respondGuarantee: (id: string, accept: boolean) => api.post<LoanDetailView>(`/loans/${id}/guarantee`, { accept }),
   addGuarantor: (id: string, guarantorUserId: string) => api.post<LoanDetailView>(`/loans/${id}/guarantors`, { guarantorUserId }),
+  /**
+   * Ask another member to take over an accepted guarantee (borrower, that guarantor, or LOAN_APPROVE). The outgoing guarantor
+   * stays liable until the new one accepts, then is RELEASED.
+   */
+  replaceGuarantor: (id: string, guarantorUserId: string, body: ReplaceGuarantorRequest) =>
+    api.post<LoanDetailView>(`/loans/${id}/guarantors/${guarantorUserId}/replace`, body),
   cancel: (id: string) => api.post<LoanDetailView>(`/loans/${id}/cancel`),
   // Officials
   /** Every loan being repaid with its schedule (.xlsx): what each borrower owes, what is overdue, the next instalment. */

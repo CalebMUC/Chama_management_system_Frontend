@@ -14,6 +14,12 @@ export const INVALIDATE = {
   investment: ['investments', 'ledger', 'dashboard', 'reports', 'expenses'],
   ledger: ['ledger', 'reports', 'dashboard'],
   platform: ['platform'],
+  /** Starting, approving, rejecting or cancelling an exit: nothing is paid yet. */
+  memberExit: ['memberExits', 'members', 'dashboard'],
+  /** Paying out clears loans and penalties from savings, closes the accounts and ends the membership. */
+  memberExitSettle: ['memberExits', 'members', 'dashboard', 'loans', 'penalties', 'memberAccounts', 'savingsProducts', 'contributions', 'ledger', 'reports'],
+  /** A guarantee transfer changes the loan and may clear an exit blocker. */
+  guaranteeTransfer: ['loans', 'dashboard', 'memberExits'],
   /** A member reports or withdraws a payment: nothing is recorded yet. */
   submission: ['paymentSubmissions', 'dashboard'],
   /** Confirming records the real contribution, penalty payment or loan repayment; rejecting only changes the report. */

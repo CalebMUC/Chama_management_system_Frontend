@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  Activity, ArrowLeftRight, BadgeCheck, BarChart3, BookOpen, Building2, CalendarRange, CircleDollarSign, ClipboardList, FileSpreadsheet,
+  Activity, ArrowLeftRight, BadgeCheck, BarChart3, BookOpen, Building2, CalendarRange, CircleDollarSign, ClipboardList, DoorOpen, FileSpreadsheet,
   FileText, Gavel, HandCoins, Handshake, History, Home, Inbox, Landmark, LayoutDashboard, Layers, ListChecks, PiggyBank, Plus, Receipt, ReceiptText, Scale, ScrollText, Send,
   Settings2, ShieldCheck, TrendingUp, Upload, UserRound, Users, Wallet,
 } from 'lucide-react';
@@ -68,6 +68,7 @@ export const navigation: NavGroup[] = [
     items: [
       { label: 'Overview', href: '/chama', icon: LayoutDashboard, permission: 'CHAMA_VIEW' },
       { label: 'Members', href: '/members', icon: Users, permission: 'MEMBER_VIEW', badge: 'applications' },
+      { label: 'Member exits', href: '/members/exits', icon: DoorOpen, permission: 'MEMBER_VIEW' },
       { label: 'Expenses', href: '/expenses', icon: Receipt, permission: 'EXPENSE_VIEW', feature: 'EXPENSES', badge: 'expenses' },
       { label: 'Investments', href: '/investments', icon: TrendingUp, permission: 'INVESTMENT_VIEW', feature: 'INVESTMENTS', badge: 'investments', exact: true },
       { label: 'Portfolio', href: '/investments/portfolio', icon: BarChart3, permission: 'INVESTMENT_VIEW', feature: 'INVESTMENTS' },
